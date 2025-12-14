@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 12,
-    minHeight: 50,
+    minHeight: 70,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
   },
