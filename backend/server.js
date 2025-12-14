@@ -101,9 +101,16 @@ app.use((err, req, res, next) => {
 // Wait for MongoDB connection before starting server (optional - server will start anyway)
 // Start server regardless of MongoDB connection status
 // Routes will handle connection errors gracefully
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`📍 API endpoint: http://localhost:${PORT}/api`);
-  console.log(`⏳ Waiting for MongoDB connection...`);
-});
+
+// For Vercel serverless, export the app instead of listening
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  // For local development or traditional hosting
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+    console.log(`📍 API endpoint: http://localhost:${PORT}/api`);
+    console.log(`⏳ Waiting for MongoDB connection...`);
+  });
+}
 
