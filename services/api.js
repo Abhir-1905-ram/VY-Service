@@ -1,28 +1,50 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-// Resolve Metro host to reach your local backend from emulator or device
-const resolveHost = () => {
-  try {
-    // Newer Expo
-    const hostUri =
-      Constants?.expoConfig?.hostUri ||
-      // Older Expo
-      Constants?.manifest?.debuggerHost ||
-      // Fallback for some environments
-      Constants?.manifest2?.extra?.expoClient?.hostUri;
-    if (hostUri) {
-      const host = hostUri.split(':')[0];
-      if (host) return host;
-    }
-  } catch (e) {
-    // ignore
+// API Base URL Configuration
+// Use Railway production URL or fallback to localhost for development
+const getApiBaseUrl = () => {
+  // Check for environment variable first (for production)
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
   }
-  // Fallbacks
-  return Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+  
+  // Production Railway URL
+  const PRODUCTION_API_URL = 'https://vy-service-production.up.railway.app/api';
+  
+  // For development, use localhost
+  const resolveHost = () => {
+    try {
+      // Newer Expo
+      const hostUri =
+        Constants?.expoConfig?.hostUri ||
+        // Older Expo
+        Constants?.manifest?.debuggerHost ||
+        // Fallback for some environments
+        Constants?.manifest2?.extra?.expoClient?.hostUri;
+      if (hostUri) {
+        const host = hostUri.split(':')[0];
+        if (host) return host;
+      }
+    } catch (e) {
+      // ignore
+    }
+    // Fallbacks
+    return Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+  };
+  
+  // Use production URL by default, or localhost if explicitly in development
+  // You can change this to use localhost during development
+  const USE_PRODUCTION = true; // Set to false to use localhost during development
+  
+  if (USE_PRODUCTION) {
+    return PRODUCTION_API_URL;
+  } else {
+    return `http://${resolveHost()}:3001/api`;
+  }
 };
 
-export const API_BASE_URL = `http://${resolveHost()}:3001/api`;
+export const API_BASE_URL = getApiBaseUrl();
 
 // Generic fetch with retry/backoff to reduce timeouts
 async function fetchJsonWithRetry(url, options = {}, { retries = 2, backoffMs = 600 } = {}) {

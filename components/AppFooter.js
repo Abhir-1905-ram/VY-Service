@@ -8,7 +8,7 @@ export default function AppFooter() {
     <View style={[
       styles.container,
       {
-        paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0, // only apply safe area padding on iOS
+        paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 8) : 8, // minimum padding for content
       },
     ]}>
       <Text style={styles.line1}>@2025 Vyshnavi Computers Services</Text>
@@ -25,10 +25,12 @@ export default function AppFooter() {
       bottom: 0,
       backgroundColor: '#0D47A1',
       alignItems: 'center',
-      justifyContent: 'flex-start', // ⬆️ moves text toward top within footer
+      justifyContent: 'center', // center content vertically
       paddingTop: 10, // adds space above
-      height: 70, // slightly taller for visual balance
+      paddingBottom: 8, // minimum padding below content
+      height: 70, // fixed height to ensure visibility
       zIndex: 999,
+      marginBottom: 0,
     },
   line1: {
     color: '#E3F2FD',
