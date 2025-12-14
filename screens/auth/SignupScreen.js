@@ -35,8 +35,8 @@ export default function SignupScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={{ flex: 1 }}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={{ flex: 1, backgroundColor: '#F5F7FB' }}>
         <View style={{ marginHorizontal: -20, marginTop: -20 }}>
           <AppHeader title="Vyshnavi Computers" />
         </View>
@@ -46,11 +46,12 @@ export default function SignupScreen({ navigation }) {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
         >
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 150 }}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 50 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             overScrollMode="never"
             bounces={false}
+            style={{ backgroundColor: '#F5F7FB' }}
           >
             <Text style={styles.title}>Employee Sign Up</Text>
             {!!message && <Text style={styles.info}>{message}</Text>}

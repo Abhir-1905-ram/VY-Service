@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
@@ -16,7 +16,7 @@ import AdminNavigator from './navigation/AdminNavigator';
 import EmployeeNavigator from './navigation/EmployeeNavigator';
 import { AuthProvider, AuthContext } from './contexts/AuthContext';
 import { colors, spacing, shadows } from './utils/theme';
-import AppFooter from './components/AppFooter';
+import SplashScreen from './screens/SplashScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,21 +37,38 @@ function RootNavigator() {
   );
 }
 
+function AppContent() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <View style={styles.contentWrapper}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
+          <RootNavigator />
+        </KeyboardAvoidingView>
+      </View>
+      <View style={styles.footerContainer}>
+        <Text style={styles.footerLine1}>@2025 Vyshnavi Computers Services</Text>
+        <Text style={styles.footerLine2}>Developer S.Abhiram</Text>
+      </View>
+    </SafeAreaView>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <SafeAreaProvider>
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-          <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
-      >
-            <RootNavigator />
-            <AppFooter />
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <AppContent />
       </SafeAreaProvider>
     </AuthProvider>
   );
@@ -60,10 +77,34 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.primary, // match navbar/status bar
+    backgroundColor: colors.primary, // Blue background for SafeAreaView
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: '#F5F7FB', // White/light background for content area
   },
   container: {
     flex: 1,
+  },
+  footerContainer: {
+    backgroundColor: '#0D47A1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 10,
+    paddingBottom: 8,
+    minHeight: 60,
+  },
+  footerLine1: {
+    color: '#E3F2FD',
+    fontWeight: '800',
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  footerLine2: {
+    color: '#E3F2FD',
+    opacity: 0.9,
+    fontWeight: '700',
+    fontSize: 11,
   },
   navbar: {
     backgroundColor: colors.primary,
