@@ -16,7 +16,6 @@ import AdminNavigator from './navigation/AdminNavigator';
 import EmployeeNavigator from './navigation/EmployeeNavigator';
 import { AuthProvider, AuthContext } from './contexts/AuthContext';
 import { colors, spacing, shadows } from './utils/theme';
-import AppFooter from './components/AppFooter';
 
 const Stack = createNativeStackNavigator();
 
@@ -49,7 +48,6 @@ export default function App() {
         keyboardVerticalOffset={0}
       >
             <RootNavigator />
-            <AppFooter />
       </KeyboardAvoidingView>
     </SafeAreaView>
       </SafeAreaProvider>
