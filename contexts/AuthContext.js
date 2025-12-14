@@ -26,7 +26,12 @@ export function AuthProvider({ children }) {
     const res = await apiLogin(username, password);
     if (!res.success) return res;
     const { role, user: u } = res.data;
-    const session = { role, username: u.username, id: u.id || null };
+    const session = { 
+      role, 
+      username: u.username, 
+      id: u.id || null,
+      allowedCards: u.allowedCards || (role === 'employee' ? ['repair-service', 'repair-list', 'attendance'] : null)
+    };
     setUser(session);
     try {
       if (remember) {

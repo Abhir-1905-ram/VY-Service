@@ -25,7 +25,7 @@ router.post('/signup', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, password } = req.body || {};
+    const { username, password, allowedCards } = req.body || {};
     const update = {};
     if (username) {
       // ensure unique username
@@ -36,9 +36,24 @@ router.put('/:id', async (req, res) => {
       update.username = username;
     }
     if (password) update.password = password;
+    if (allowedCards !== undefined) {
+      // Validate allowedCards array - allow empty array to block all cards
+      const validCards = ['repair-service', 'repair-list', 'attendance'];
+      if (Array.isArray(allowedCards)) {
+        const filtered = allowedCards.filter(card => validCards.includes(card));
+        update.allowedCards = filtered;
+        console.log('Updating allowedCards for employee', id, 'to:', filtered);
+      } else {
+        update.allowedCards = [];
+        console.log('Updating allowedCards for employee', id, 'to empty array (invalid input)');
+      }
+    }
     const emp = await Employee.findByIdAndUpdate(id, update, { new: true });
     if (!emp) return res.status(404).json({ success: false, message: 'Employee not found' });
-    res.json({ success: true, data: { id: emp._id, username: emp.username, isApproved: emp.isApproved } });
+    // Ensure allowedCards is always returned as an array
+    const returnedCards = Array.isArray(emp.allowedCards) ? emp.allowedCards : (emp.allowedCards ? [emp.allowedCards] : []);
+    console.log('Returning employee data with allowedCards:', returnedCards);
+    res.json({ success: true, data: { id: emp._id, username: emp.username, isApproved: emp.isApproved, allowedCards: returnedCards } });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to update employee', error: e.message });
   }
@@ -48,9 +63,37 @@ router.put('/:id', async (req, res) => {
 router.get('/', async (_req, res) => {
   try {
     const emps = await Employee.find().sort({ createdAt: -1 });
-    res.json({ success: true, data: emps });
+    // Ensure allowedCards is always an array in the response
+    const empsWithCards = emps.map(emp => ({
+      ...emp.toObject(),
+      allowedCards: Array.isArray(emp.allowedCards) ? emp.allowedCards : (emp.allowedCards ? [emp.allowedCards] : [])
+    }));
+    res.json({ success: true, data: empsWithCards });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to fetch employees', error: e.message });
+  }
+});
+
+// GET /api/employees/:id/cards - get allowed cards for an employee
+router.get('/:id/cards', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const emp = await Employee.findById(id);
+    if (!emp) return res.status(404).json({ success: false, message: 'Employee not found' });
+    // Return the actual allowedCards from database
+    // If field doesn't exist (undefined), return defaults. If empty array, return empty array.
+    let cards = [];
+    if (emp.allowedCards === undefined || emp.allowedCards === null) {
+      // Field was never set, use defaults
+      cards = ['repair-service', 'repair-list', 'attendance'];
+    } else if (Array.isArray(emp.allowedCards)) {
+      // Field exists, return as-is (even if empty)
+      cards = emp.allowedCards;
+    }
+    console.log('GET cards for employee', id, 'returning:', cards);
+    res.json({ success: true, data: { allowedCards: cards } });
+  } catch (e) {
+    res.status(500).json({ success: false, message: 'Failed to fetch cards', error: e.message });
   }
 });
 

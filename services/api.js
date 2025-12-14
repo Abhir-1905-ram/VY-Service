@@ -314,6 +314,47 @@ export const deleteEmployee = async (id) => {
   }
 };
 
+// Get allowed cards for an employee
+export const getEmployeeCards = async (employeeId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/employees/${employeeId}/cards`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await response.json();
+    if (response.ok) {
+      return { success: true, data: data.data || { allowedCards: [] } };
+    }
+    return { success: false, message: data.message || 'Failed to fetch employee cards' };
+  } catch (error) {
+    return { success: false, message: error.message || 'Network error' };
+  }
+};
+
+// Update allowed cards for an employee
+export const updateEmployeeCards = async (employeeId, allowedCards) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/employees/${employeeId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ allowedCards }),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      // Ensure allowedCards is included in the response data
+      const responseData = data.data || {};
+      // If allowedCards is not in response, use the one we sent (shouldn't happen, but fallback)
+      if (!responseData.hasOwnProperty('allowedCards')) {
+        responseData.allowedCards = Array.isArray(allowedCards) ? allowedCards : [];
+      }
+      return { success: true, data: responseData };
+    }
+    return { success: false, message: data.message || 'Failed to update employee cards' };
+  } catch (error) {
+    return { success: false, message: error.message || 'Network error' };
+  }
+};
+
 // ---------- Attendance ----------
 export const markAttendance = async (employeeId, currentIp, date, lat, lng, accuracy, employeeName) => {
   try {

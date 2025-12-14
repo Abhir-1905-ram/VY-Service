@@ -45,7 +45,7 @@ function AppContent() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={[]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <View style={styles.contentWrapper}>
         <KeyboardAvoidingView

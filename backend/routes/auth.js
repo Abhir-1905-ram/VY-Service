@@ -20,7 +20,15 @@ router.post('/login', async (req, res) => {
     if (!emp.isApproved) {
       return res.status(403).json({ success: false, message: 'Admin has not approved your account yet.' });
     }
-    return res.json({ success: true, role: 'employee', user: { id: emp._id, username: emp.username } });
+    return res.json({ 
+      success: true, 
+      role: 'employee', 
+      user: { 
+        id: emp._id, 
+        username: emp.username,
+        allowedCards: emp.allowedCards || ['repair-service', 'repair-list', 'attendance']
+      } 
+    });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Login failed', error: e.message });
   }

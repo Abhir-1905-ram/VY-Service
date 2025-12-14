@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, SafeAreaView, StyleSheet, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { approveEmployee, getEmployees, deleteEmployee } from '../../services/api';
 import AppHeader from '../../components/AppHeader';
 import AppCard from '../../components/AppCard';
@@ -15,7 +16,15 @@ export default function EmployeeListScreen({ navigation }) {
     if (res.success) setEmployees(res.data);
     setLoading(false);
   };
+  
   useEffect(() => { load(); }, []);
+  
+  // Refresh when screen comes into focus (after returning from details)
+  useFocusEffect(
+    React.useCallback(() => {
+      load();
+    }, [])
+  );
 
   const onApprove = async (id) => {
     const res = await approveEmployee(id);
