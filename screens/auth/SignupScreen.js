@@ -46,7 +46,7 @@ export default function SignupScreen({ navigation }) {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
         >
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 50 }}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 100 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             overScrollMode="never"
