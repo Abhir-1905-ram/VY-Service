@@ -70,6 +70,22 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'VY Service Backend API',
+    status: 'running',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      employees: '/api/employees',
+      repairs: '/api/repairs',
+      attendance: '/api/attendance'
+    }
+  });
+});
+
 // Routes
 const repairsRouter = require('./routes/repairs');
 app.use('/api/repairs', repairsRouter);
