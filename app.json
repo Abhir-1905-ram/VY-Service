@@ -15,8 +15,10 @@
       "barStyle": "light-content",
       "visible": "leanback"
     },
+    "icon": "./assets/icon.png",
     "splash": {
-      "backgroundColor": "#ffffff",
+      "image": "./assets/splash.png",
+      "backgroundColor": "#1A237E",
       "resizeMode": "contain"
     },
     "assetBundlePatterns": ["**/*"],
@@ -28,8 +30,10 @@
       }
     },
     "android": {
+      "icon": "./assets/icon.png",
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1A237E"
       },
       "package": "com.vyservice.app",
       "permissions": [
