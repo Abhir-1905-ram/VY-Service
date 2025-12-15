@@ -46,15 +46,15 @@ function AppContent() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={[]}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+          <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <View style={styles.contentWrapper}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={0}
-        >
-          <RootNavigator />
-        </KeyboardAvoidingView>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+            <RootNavigator />
+      </KeyboardAvoidingView>
       </View>
       <View style={styles.footerContainer}>
         <Text style={styles.footerLine1}>@2025 Vyshnavi Computers Services</Text>

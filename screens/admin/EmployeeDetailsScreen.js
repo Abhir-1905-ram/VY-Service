@@ -162,9 +162,9 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
             const isDisabled = card.id === 'repair-list' && !allowedCards.includes('repair-service');
             
             return (
-              <View key={card.id} style={styles.cardOption}>
-                <View style={styles.cardOptionContent}>
-                  <Text style={styles.cardLabel}>{card.label}</Text>
+            <View key={card.id} style={styles.cardOption}>
+              <View style={styles.cardOptionContent}>
+                <Text style={styles.cardLabel}>{card.label}</Text>
                   <Text style={styles.cardDescription}>
                     {card.description}
                     {card.id === 'repair-list' && (
@@ -173,15 +173,15 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
                       </Text>
                     )}
                   </Text>
-                </View>
-                <Switch
-                  value={isEnabled && !isDisabled}
-                  onValueChange={() => toggleCard(card.id)}
-                  disabled={isDisabled}
-                  trackColor={{ false: '#E0E0E0', true: colors.secondary }}
-                  thumbColor={isEnabled && !isDisabled ? '#fff' : '#f4f3f4'}
-                />
               </View>
+              <Switch
+                  value={isEnabled && !isDisabled}
+                onValueChange={() => toggleCard(card.id)}
+                  disabled={isDisabled}
+                trackColor={{ false: '#E0E0E0', true: colors.secondary }}
+                  thumbColor={isEnabled && !isDisabled ? '#fff' : '#f4f3f4'}
+              />
+            </View>
             );
           })}
         </AppCard>

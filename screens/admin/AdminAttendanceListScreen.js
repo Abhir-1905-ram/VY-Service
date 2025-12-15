@@ -23,12 +23,12 @@ export default function AdminAttendanceListScreen({ navigation }) {
 
   const renderItem = ({ item }) => (
     <AppCard>
-      <View style={styles.row}>
+      <TouchableOpacity 
+        style={styles.nameButton}
+        onPress={() => navigation.navigate('AdminAttendanceEdit', { employeeId: item._id || item.id, username: item.username })}
+      >
         <Text style={styles.name}>{item.username}</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('AdminAttendanceEdit', { employeeId: item._id || item.id, username: item.username })}>
-          <Text style={styles.btnText}>View Attendance</Text>
-        </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     </AppCard>
   );
 
@@ -53,10 +53,15 @@ export default function AdminAttendanceListScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#F5F7FB' },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  name: { fontSize: 16, fontWeight: '800', color: colors.text },
-  btn: { backgroundColor: colors.secondary, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10 },
-  btnText: { color: '#fff', fontWeight: '800' },
+  nameButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  name: { 
+    fontSize: 16, 
+    fontWeight: '800', 
+    color: colors.primary,
+  },
 });
 
 

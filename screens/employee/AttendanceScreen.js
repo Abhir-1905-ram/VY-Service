@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Platform, Alert, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Platform, Alert, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import * as Network from 'expo-network';
 import * as Location from 'expo-location';
 import { AuthContext } from '../../contexts/AuthContext';
@@ -17,6 +17,7 @@ export default function AttendanceScreen({ navigation }) {
   const [hasPermission, setHasPermission] = useState(false);
   const [checkingPermission, setCheckingPermission] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [lastIp, setLastIp] = useState('');
   const [lastLoc, setLastLoc] = useState(null);
   const [markedToday, setMarkedToday] = useState(false);
@@ -93,7 +94,7 @@ export default function AttendanceScreen({ navigation }) {
 
   React.useEffect(() => {
     if (hasPermission) {
-      refreshMarkedToday();
+    refreshMarkedToday();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, refreshToken, hasPermission]);
@@ -152,12 +153,14 @@ export default function AttendanceScreen({ navigation }) {
       showToast('Already you have given attendance');
       return;
     }
+    setChecking(true);
     try {
       const ip = await Network.getIpAddressAsync();
       setLastIp(ip || '');
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         showToast('Location permission denied');
+        setChecking(false);
         return;
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
@@ -176,6 +179,8 @@ export default function AttendanceScreen({ navigation }) {
       }
     } catch (e) {
       showToast(e.message || 'Could not read network info');
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -225,8 +230,19 @@ export default function AttendanceScreen({ navigation }) {
         <View style={{ marginTop: 10 }} />
         <View style={styles.card}>
           <Text style={styles.title}>Attendance</Text>
-          <TouchableOpacity style={[styles.button, styles.secondaryBtn, markedToday && styles.buttonDisabled]} onPress={handleCheck}>
-            <Text style={styles.buttonText}>Check </Text>
+          <TouchableOpacity 
+            style={[styles.button, styles.secondaryBtn, (markedToday || checking) && styles.buttonDisabled]} 
+            onPress={handleCheck}
+            disabled={checking}
+          >
+            {checking ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.buttonText}>Checking...</Text>
+              </View>
+            ) : (
+              <Text style={styles.buttonText}>Check</Text>
+            )}
           </TouchableOpacity>
           <TouchableOpacity style={[styles.button, (submitting || markedToday) && styles.buttonDisabled]} onPress={handleMark}>
             <Text style={styles.buttonText}>{submitting ? 'Marking...' : (markedToday ? 'Marked for Today' : 'Mark Attendance')}</Text>
@@ -251,6 +267,7 @@ const styles = StyleSheet.create({
   secondaryBtn: { backgroundColor: '#455A64' },
   buttonDisabled: { opacity: 0.7 },
   buttonText: { color: '#fff', fontWeight: '800' },
+  loadingContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   note: { marginTop: 10, color: '#78909C' },
 });
 
