@@ -146,6 +146,7 @@ export default function RepairList({ navigation, isAdmin = false }) {
     try {
       const response = await updateRepair(repair._id, { status: 'Pending', deliveredAt: null });
       if (response.success) {
+        Alert.alert('Success', 'Repair status updated to Pending');
         loadRepairs();
       } else {
         Alert.alert('Error', response.message || 'Failed to update repair');
@@ -788,4 +789,3 @@ const styles = StyleSheet.create({
     color: '#95A5A6',
   },
 });
-

@@ -12,6 +12,7 @@ import {
   StatusBar,
   Modal,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { saveRepair, getRepairs, getRepairById } from '../services/api';
@@ -39,6 +40,7 @@ export default function RepairAndService({ navigation, createdBy }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
   
   // Show previous problems for the current Unique ID (beside Check ID)
   const getDetailsForCurrentId = async () => {
@@ -258,6 +260,7 @@ export default function RepairAndService({ navigation, createdBy }) {
       return;
     }
 
+    setSaving(true);
     try {
       // Parse date and time to create proper Date object
       const dateTimeString = `${formData.date} ${formData.time}`;
@@ -338,6 +341,8 @@ export default function RepairAndService({ navigation, createdBy }) {
       }
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to save repair entry');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -636,8 +641,19 @@ export default function RepairAndService({ navigation, createdBy }) {
         </View>
 
         {/* Save Button */}
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save Entry</Text>
+        <TouchableOpacity 
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]} 
+          onPress={handleSave}
+          disabled={saving}
+        >
+          {saving ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.saveButtonText}>Saving...</Text>
+            </View>
+          ) : (
+            <Text style={styles.saveButtonText}>Save Entry</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -1003,6 +1019,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
+  },
+  saveButtonDisabled: {
+    opacity: 0.7,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   saveButtonText: {
     color: '#fff',

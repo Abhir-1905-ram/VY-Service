@@ -150,8 +150,8 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const updateData = {};
 
-    if (req.body.deliveredAt) {
-      updateData.deliveredAt = new Date(req.body.deliveredAt);
+    if (req.body.deliveredAt !== undefined) {
+      updateData.deliveredAt = req.body.deliveredAt ? new Date(req.body.deliveredAt) : null;
     }
     if (req.body.status) {
       updateData.status = req.body.status;
