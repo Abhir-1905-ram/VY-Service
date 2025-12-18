@@ -150,8 +150,13 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const updateData = {};
 
+    // Handle deliveredAt: explicitly set to null if provided as null, or set to date if provided
     if (req.body.deliveredAt !== undefined) {
-      updateData.deliveredAt = req.body.deliveredAt ? new Date(req.body.deliveredAt) : null;
+      if (req.body.deliveredAt === null || req.body.deliveredAt === '') {
+        updateData.deliveredAt = null;
+      } else {
+        updateData.deliveredAt = new Date(req.body.deliveredAt);
+      }
     }
     if (req.body.status) {
       updateData.status = req.body.status;

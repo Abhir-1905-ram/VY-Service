@@ -143,15 +143,38 @@ export default function RepairList({ navigation, isAdmin = false }) {
   };
 
   const handleMarkAsPending = async (repair) => {
+    // Only allow admin users to perform this action
+    if (!isAdmin) {
+      Alert.alert('Error', 'Only admin users can perform this action');
+      return;
+    }
+
+    // Optimistic update: immediately update local state to move item from Delivered to Pending
+    setRepairs(prevRepairs => 
+      prevRepairs.map(r => 
+        r._id === repair._id 
+          ? { ...r, status: 'Pending', deliveredAt: null }
+          : r
+      )
+    );
+
     try {
       const response = await updateRepair(repair._id, { status: 'Pending', deliveredAt: null });
       if (response.success) {
-        Alert.alert('Success', 'Repair status updated to Pending');
-        loadRepairs();
+        // Refresh to ensure data consistency with backend
+        await loadRepairs();
+        // If we're on Delivered tab, switch to Pending tab to show the moved item
+        if (activeTab === 'Delivered') {
+          setActiveTab('Pending');
+        }
       } else {
+        // Revert optimistic update on error
+        await loadRepairs();
         Alert.alert('Error', response.message || 'Failed to update repair');
       }
     } catch (error) {
+      // Revert optimistic update on error
+      await loadRepairs();
       Alert.alert('Error', error.message || 'Failed to update repair');
     }
   };
