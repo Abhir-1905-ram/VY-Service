@@ -279,6 +279,9 @@ export default function RepairList({ navigation, isAdmin = false }) {
           <View style={styles.headerLeft}>
             <Text style={styles.customerName}>{item.customerName}</Text>
             <Text style={styles.repairId}>ID: {item.uniqueId}</Text>
+            {isDelivered && item.amount && (
+              <Text style={styles.amountText}>Amount: ₹{item.amount.toFixed(2)}</Text>
+            )}
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity
@@ -755,6 +758,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#7F8C8D',
     fontWeight: '500',
+  },
+  amountText: {
+    fontSize: 14,
+    color: '#2E7D32',
+    fontWeight: '700',
+    marginTop: 4,
   },
   statusBadge: {
     paddingHorizontal: 10,
