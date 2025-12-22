@@ -36,6 +36,7 @@ export default function RepairList({ navigation, isAdmin = false }) {
   const [amountModalVisible, setAmountModalVisible] = useState(false);
   const [amountText, setAmountText] = useState('');
   const [amountTarget, setAmountTarget] = useState(null); // repair object
+  const [savingDelivered, setSavingDelivered] = useState(false);
 
   useEffect(() => {
     loadRepairs();
@@ -134,10 +135,15 @@ export default function RepairList({ navigation, isAdmin = false }) {
       return;
     }
 
+    if (savingDelivered) {
+      return; // Prevent multiple clicks
+    }
+
+    setSavingDelivered(true);
+
     try {
-      const { date, time } = getCurrentDateTime();
-      const dateTimeString = `${date} ${time}`;
-      const deliveredAt = parseDateTime(dateTimeString);
+      // Use current date/time directly instead of parsing
+      const deliveredAt = new Date();
 
       // Parse amount: if empty or invalid, set to null (optional)
       let amountValue = null;
@@ -157,17 +163,26 @@ export default function RepairList({ navigation, isAdmin = false }) {
 
       const response = await updateRepair(amountTarget._id, updateData);
       
+      // Close modal first to prevent UI blocking
+      setAmountModalVisible(false);
+      setAmountText('');
+      const targetRepair = amountTarget;
+      setAmountTarget(null);
+      setSavingDelivered(false);
+      
       if (response.success) {
-        setAmountModalVisible(false);
-        setAmountText('');
-        setAmountTarget(null);
         Alert.alert('Success', 'Repair marked as delivered successfully!');
-        loadRepairs();
+        await loadRepairs();
       } else {
         Alert.alert('Error', response.message || 'Failed to update repair');
       }
     } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to update repair');
+      console.error('Error marking as delivered:', error);
+      setAmountModalVisible(false);
+      setAmountText('');
+      setAmountTarget(null);
+      setSavingDelivered(false);
+      Alert.alert('Error', error.message || 'Failed to update repair. Please try again.');
     }
   };
 
@@ -559,7 +574,14 @@ export default function RepairList({ navigation, isAdmin = false }) {
         visible={amountModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setAmountModalVisible(false)}
+        onRequestClose={() => {
+          if (!savingDelivered) {
+            setAmountModalVisible(false);
+            setAmountText('');
+            setAmountTarget(null);
+            setSavingDelivered(false);
+          }
+        }}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
@@ -574,15 +596,30 @@ export default function RepairList({ navigation, isAdmin = false }) {
               keyboardType="numeric"
             />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 }}>
-              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#9E9E9E' }]} onPress={() => {
-                setAmountModalVisible(false);
-                setAmountText('');
-                setAmountTarget(null);
-              }}>
+              <TouchableOpacity 
+                style={[styles.modalBtn, { backgroundColor: '#9E9E9E' }]} 
+                onPress={() => {
+                  if (!savingDelivered) {
+                    setAmountModalVisible(false);
+                    setAmountText('');
+                    setAmountTarget(null);
+                    setSavingDelivered(false);
+                  }
+                }}
+                disabled={savingDelivered}
+              >
                 <Text style={styles.modalBtnText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: colors.secondary, marginLeft: 8 }]} onPress={saveAmountAndMarkAsDelivered}>
-                <Text style={styles.modalBtnText}>Mark Delivered</Text>
+              <TouchableOpacity 
+                style={[styles.modalBtn, { backgroundColor: savingDelivered ? '#9E9E9E' : colors.secondary, marginLeft: 8 }]} 
+                onPress={saveAmountAndMarkAsDelivered}
+                disabled={savingDelivered}
+              >
+                {savingDelivered ? (
+                  <Text style={styles.modalBtnText}>Saving...</Text>
+                ) : (
+                  <Text style={styles.modalBtnText}>Mark Delivered</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
