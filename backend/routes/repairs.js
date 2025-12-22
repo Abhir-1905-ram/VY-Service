@@ -164,6 +164,15 @@ router.put('/:id', async (req, res) => {
     if (req.body.remark !== undefined) {
       updateData.remark = req.body.remark;
     }
+    // Handle amount: optional field for delivered items
+    if (req.body.amount !== undefined) {
+      if (req.body.amount === null || req.body.amount === '' || req.body.amount === 0) {
+        updateData.amount = null;
+      } else {
+        const amountValue = parseFloat(req.body.amount);
+        updateData.amount = isNaN(amountValue) ? null : amountValue;
+      }
+    }
 
     const repair = await Repair.findByIdAndUpdate(
       id,

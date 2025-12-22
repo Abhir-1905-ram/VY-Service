@@ -60,6 +60,10 @@ const repairSchema = new mongoose.Schema({
     trim: true,
     default: '', // employee username or 'admin'
   },
+  amount: {
+    type: Number,
+    default: null, // Optional amount for delivered items
+  },
 }, {
   timestamps: true,
 });

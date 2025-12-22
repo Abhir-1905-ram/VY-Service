@@ -33,6 +33,9 @@ export default function RepairList({ navigation, isAdmin = false }) {
   const [remarkText, setRemarkText] = useState('');
   const [remarkTarget, setRemarkTarget] = useState(null); // repair object
   const [remarkStatus, setRemarkStatus] = useState(null); // 'Completed' | 'Not Completed'
+  const [amountModalVisible, setAmountModalVisible] = useState(false);
+  const [amountText, setAmountText] = useState('');
+  const [amountTarget, setAmountTarget] = useState(null); // repair object
 
   useEffect(() => {
     loadRepairs();
@@ -119,19 +122,45 @@ export default function RepairList({ navigation, isAdmin = false }) {
   };
 
   const handleMarkAsDelivered = async (repair) => {
+    // Open amount modal first (amount is optional)
+    setAmountTarget(repair);
+    setAmountText('');
+    setAmountModalVisible(true);
+  };
+
+  const saveAmountAndMarkAsDelivered = async () => {
+    if (!amountTarget) {
+      setAmountModalVisible(false);
+      return;
+    }
+
     try {
       const { date, time } = getCurrentDateTime();
       const dateTimeString = `${date} ${time}`;
       const deliveredAt = parseDateTime(dateTimeString);
 
+      // Parse amount: if empty or invalid, set to null (optional)
+      let amountValue = null;
+      const trimmedAmount = String(amountText || '').trim();
+      if (trimmedAmount) {
+        const parsed = parseFloat(trimmedAmount);
+        if (!isNaN(parsed) && parsed > 0) {
+          amountValue = parsed;
+        }
+      }
+
       const updateData = {
         deliveredAt: deliveredAt.toISOString(),
+        amount: amountValue, // null if not provided or invalid
         // keep existing remark (do not overwrite)
       };
 
-      const response = await updateRepair(repair._id, updateData);
+      const response = await updateRepair(amountTarget._id, updateData);
       
       if (response.success) {
+        setAmountModalVisible(false);
+        setAmountText('');
+        setAmountTarget(null);
         Alert.alert('Success', 'Repair marked as delivered successfully!');
         loadRepairs();
       } else {
@@ -302,11 +331,19 @@ export default function RepairList({ navigation, isAdmin = false }) {
                 {createdDate} {createdTime}
               </Text>
             </View>
-            {item.status === 'Completed' && deliveredDate && (
+            {isDelivered && deliveredDate && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailText}>
                   <Text style={styles.detailLabel}>Delivered Date: </Text>
                   {deliveredDate} {deliveredTime}
+                </Text>
+              </View>
+            )}
+            {isDelivered && item.amount && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Amount: </Text>
+                  ₹{item.amount.toFixed(2)}
                 </Text>
               </View>
             )}
@@ -508,6 +545,41 @@ export default function RepairList({ navigation, isAdmin = false }) {
               </TouchableOpacity>
               <TouchableOpacity style={[styles.modalBtn, { backgroundColor: colors.secondary, marginLeft: 8 }]} onPress={saveRemarkAndUpdate}>
                 <Text style={styles.modalBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Amount Modal for Delivered Items */}
+      <Modal
+        visible={amountModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAmountModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Mark as Delivered</Text>
+            <Text style={styles.modalSubtitle}>Enter amount (optional)</Text>
+            <TextInput
+              style={[styles.modalInput, { minHeight: 50, textAlignVertical: 'center' }]}
+              value={amountText}
+              onChangeText={setAmountText}
+              placeholder="Enter amount (e.g., 500)"
+              placeholderTextColor="#95A5A6"
+              keyboardType="numeric"
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 }}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#9E9E9E' }]} onPress={() => {
+                setAmountModalVisible(false);
+                setAmountText('');
+                setAmountTarget(null);
+              }}>
+                <Text style={styles.modalBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: colors.secondary, marginLeft: 8 }]} onPress={saveAmountAndMarkAsDelivered}>
+                <Text style={styles.modalBtnText}>Mark Delivered</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -777,6 +849,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#2C3E50',
     marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#7F8C8D',
+    marginBottom: 12,
   },
   modalInput: {
     minHeight: 90,
