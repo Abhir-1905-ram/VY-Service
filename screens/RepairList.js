@@ -231,6 +231,35 @@ export default function RepairList({ navigation, isAdmin = false }) {
       return;
     }
 
+    // Check if phone number contains multiple numbers (comma-separated)
+    const phoneNumbers = phoneNumber.split(',').map(p => p.trim()).filter(p => p.length > 0);
+    
+    if (phoneNumbers.length > 1) {
+      // Multiple phone numbers - show selection dialog
+      const buttons = phoneNumbers.map((phone, index) => ({
+        text: phone,
+        onPress: () => makeCall(phone),
+      }));
+      buttons.push({ text: 'Cancel', style: 'cancel' });
+      
+      Alert.alert(
+        'Select Phone Number',
+        'Which number would you like to call?',
+        buttons,
+        { cancelable: true }
+      );
+    } else {
+      // Single phone number - call directly
+      makeCall(phoneNumbers[0] || phoneNumber);
+    }
+  };
+
+  const makeCall = (phoneNumber) => {
+    if (!phoneNumber) {
+      Alert.alert('Error', 'Phone number not available');
+      return;
+    }
+
     const phoneUrl = `tel:${phoneNumber}`;
     Linking.canOpenURL(phoneUrl)
       .then((supported) => {

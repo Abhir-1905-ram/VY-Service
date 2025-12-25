@@ -29,7 +29,7 @@ export default function RepairAndService({ navigation, createdBy }) {
     time: '',
     uniqueId: '',
     customerName: '',
-    phoneNumber: '',
+    phoneNumbers: [''], // Array of phone numbers
     type: '',
     brand: '',
     adapterGiven: null,
@@ -132,7 +132,7 @@ export default function RepairAndService({ navigation, createdBy }) {
           time,
           uniqueId: String(nextId),
           customerName: '',
-          phoneNumber: '',
+          phoneNumbers: [''],
           type: '',
           brand: '',
           adapterGiven: null,
@@ -145,7 +145,7 @@ export default function RepairAndService({ navigation, createdBy }) {
           time,
           uniqueId: '1',
           customerName: '',
-          phoneNumber: '',
+          phoneNumbers: [''],
           type: '',
           brand: '',
           adapterGiven: null,
@@ -159,7 +159,7 @@ export default function RepairAndService({ navigation, createdBy }) {
         time,
         uniqueId: '1',
         customerName: '',
-        phoneNumber: '',
+        phoneNumbers: [''],
         type: '',
         brand: '',
         adapterGiven: null,
@@ -197,6 +197,36 @@ export default function RepairAndService({ navigation, createdBy }) {
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Add a new phone number input
+  const addPhoneNumber = () => {
+    setFormData(prev => ({
+      ...prev,
+      phoneNumbers: [...prev.phoneNumbers, ''],
+    }));
+  };
+
+  // Remove a phone number input by index
+  const removePhoneNumber = (index) => {
+    if (formData.phoneNumbers.length <= 1) {
+      Alert.alert('Error', 'At least one phone number is required');
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      phoneNumbers: prev.phoneNumbers.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Update a specific phone number by index
+  const updatePhoneNumber = (index, value) => {
+    const digitsOnly = value.replace(/[^0-9]/g, '').slice(0, 10);
+    setFormData(prev => {
+      const newPhoneNumbers = [...prev.phoneNumbers];
+      newPhoneNumbers[index] = digitsOnly;
+      return { ...prev, phoneNumbers: newPhoneNumbers };
+    });
   };
 
   // Request contacts permission and load contacts
@@ -326,7 +356,7 @@ export default function RepairAndService({ navigation, createdBy }) {
 
     setFormData(prev => ({
       ...prev,
-      phoneNumber: phone,
+      phoneNumbers: [phone],
       customerName: prev.customerName || contact.name, // Only fill name if empty
     }));
     setShowContactsModal(false);
@@ -345,7 +375,7 @@ export default function RepairAndService({ navigation, createdBy }) {
       setFormData(prev => ({
         ...prev,
         customerName: String(localMatch.customerName || ''),
-        phoneNumber: String(localMatch.phoneNumber || ''),
+        phoneNumbers: localMatch.phoneNumber ? localMatch.phoneNumber.split(',').map(p => p.trim()) : [''],
         type: String(localMatch.type || ''),
         brand: String(localMatch.brand || ''),
       }));
@@ -360,7 +390,7 @@ export default function RepairAndService({ navigation, createdBy }) {
         setFormData(prev => ({
           ...prev,
           customerName: String(repair.customerName || ''),
-          phoneNumber: String(repair.phoneNumber || ''),
+          phoneNumbers: repair.phoneNumber ? repair.phoneNumber.split(',').map(p => p.trim()) : [''],
           type: String(repair.type || ''),
           brand: String(repair.brand || ''),
         }));
@@ -370,7 +400,7 @@ export default function RepairAndService({ navigation, createdBy }) {
         setFormData(prev => ({
           ...prev,
           customerName: '',
-          phoneNumber: '',
+          phoneNumbers: [''],
           type: '',
           brand: '',
         }));
@@ -436,15 +466,19 @@ export default function RepairAndService({ navigation, createdBy }) {
       Alert.alert('Error', 'Please enter customer name');
       return;
     }
-    if (!formData.phoneNumber.trim()) {
-      Alert.alert('Error', 'Please enter phone number');
+    // Validate phone numbers - at least one required
+    const validPhoneNumbers = formData.phoneNumbers.filter(phone => phone.trim().length > 0);
+    if (validPhoneNumbers.length === 0) {
+      Alert.alert('Error', 'Please enter at least one phone number');
       return;
     }
-    // Phone number validation - exactly 10 digits
+    // Validate each phone number - exactly 10 digits
     const phoneRegex = /^\d{10}$/;
-    if (!phoneRegex.test(formData.phoneNumber.trim())) {
-      Alert.alert('Error', 'Phone number must be exactly 10 digits');
-      return;
+    for (let phone of validPhoneNumbers) {
+      if (!phoneRegex.test(phone.trim())) {
+        Alert.alert('Error', 'All phone numbers must be exactly 10 digits');
+        return;
+      }
     }
     if (!formData.type.trim()) {
       Alert.alert('Error', 'Please enter device type');
@@ -479,10 +513,13 @@ export default function RepairAndService({ navigation, createdBy }) {
         }
       }
 
+      // Join phone numbers with comma (backend stores as single string)
+      const phoneNumberString = validPhoneNumbers.join(',');
+
       const repairData = {
         uniqueId: formData.uniqueId,
         customerName: formData.customerName.trim(),
-        phoneNumber: formData.phoneNumber.trim(),
+        phoneNumber: phoneNumberString,
         type: formData.type.trim(),
         brand: formData.brand.trim(),
         adapterGiven: formData.adapterGiven,
@@ -507,7 +544,7 @@ export default function RepairAndService({ navigation, createdBy }) {
           time,
           uniqueId: nextId,
           customerName: '',
-          phoneNumber: '',
+          phoneNumbers: [''],
           type: '',
           brand: '',
           adapterGiven: null,
@@ -537,7 +574,7 @@ export default function RepairAndService({ navigation, createdBy }) {
           {
             uniqueId: formData.uniqueId,
             customerName: formData.customerName.trim(),
-            phoneNumber: formData.phoneNumber.trim(),
+            phoneNumber: validPhoneNumbers.join(','),
             type: formData.type.trim(),
             brand: formData.brand.trim(),
             adapterGiven: formData.adapterGiven,
@@ -765,37 +802,54 @@ export default function RepairAndService({ navigation, createdBy }) {
           />
         </View>
 
-        {/* Phone Number */}
+        {/* Phone Numbers */}
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Phone Number *</Text>
-          <View style={styles.phoneInputContainer}>
-            <TextInput
-              style={[styles.input, styles.phoneInput]}
-              value={formData.phoneNumber}
-              onChangeText={(value) => {
-                // Only allow digits and limit to 10 digits
-                const digitsOnly = value.replace(/[^0-9]/g, '').slice(0, 10);
-                handleInputChange('phoneNumber', digitsOnly);
-              }}
-              placeholder="Enter 10 digit phone number"
-              keyboardType="phone-pad"
-              maxLength={10}
-            />
-            <TouchableOpacity
-              style={styles.contactButton}
-              onPress={loadContacts}
-              disabled={loadingContacts}
-            >
-              {loadingContacts ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Icon name="person-outline" size={24} color={colors.primary} />
+          <Text style={styles.label}>Phone Number(s) *</Text>
+          {formData.phoneNumbers.map((phone, index) => (
+            <View key={index} style={styles.phoneInputWrapper}>
+              <View style={styles.phoneInputContainer}>
+                <TextInput
+                  style={[styles.input, styles.phoneInput]}
+                  value={phone}
+                  onChangeText={(value) => updatePhoneNumber(index, value)}
+                  placeholder="Enter 10 digit phone number"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                />
+                {index === 0 && (
+                  <TouchableOpacity
+                    style={styles.contactButton}
+                    onPress={loadContacts}
+                    disabled={loadingContacts}
+                  >
+                    {loadingContacts ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Icon name="person-outline" size={24} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                )}
+                {formData.phoneNumbers.length > 1 && (
+                  <TouchableOpacity
+                    style={styles.removePhoneButton}
+                    onPress={() => removePhoneNumber(index)}
+                  >
+                    <Icon name="close-circle" size={24} color="#E74C3C" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {phone.length > 0 && phone.length !== 10 && (
+                <Text style={styles.errorText}>Phone number must be exactly 10 digits</Text>
               )}
-            </TouchableOpacity>
-          </View>
-          {formData.phoneNumber.length > 0 && formData.phoneNumber.length !== 10 && (
-            <Text style={styles.errorText}>Phone number must be exactly 10 digits</Text>
-          )}
+            </View>
+          ))}
+          <TouchableOpacity
+            style={styles.addPhoneButton}
+            onPress={addPhoneNumber}
+          >
+            <Icon name="add-circle-outline" size={24} color={colors.primary} />
+            <Text style={styles.addPhoneButtonText}>Add Another Phone Number</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Device Type - Text Input */}
@@ -1410,6 +1464,37 @@ const styles = StyleSheet.create({
   phoneInput: {
     flex: 1,
     marginRight: 8,
+  },
+  phoneInputWrapper: {
+    marginBottom: 12,
+  },
+  removePhoneButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFEBEE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  addPhoneButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderStyle: 'dashed',
+  },
+  addPhoneButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   contactButton: {
     width: 48,
