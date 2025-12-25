@@ -5,6 +5,15 @@ const Repair = require('../models/Repair');
 // POST /api/repairs - Create a new repair entry
 router.post('/', async (req, res) => {
   try {
+    // Parse expectedAmount (optional)
+    let expectedAmountValue = null;
+    if (req.body.expectedAmount !== undefined && req.body.expectedAmount !== null && req.body.expectedAmount !== '') {
+      const parsed = parseFloat(req.body.expectedAmount);
+      if (!isNaN(parsed) && parsed > 0) {
+        expectedAmountValue = parsed;
+      }
+    }
+
     const repairData = {
       uniqueId: req.body.uniqueId,
       customerName: req.body.customerName,
@@ -16,6 +25,7 @@ router.post('/', async (req, res) => {
       createdAt: req.body.createdAt ? new Date(req.body.createdAt) : new Date(),
       status: req.body.status || 'Pending',
       createdBy: req.body.createdBy || '',
+      expectedAmount: expectedAmountValue, // Optional expected amount
     };
 
     // Validate required fields
