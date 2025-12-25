@@ -166,14 +166,18 @@ export default function RepairAndService({ navigation, createdBy }) {
 
       // Get contacts with pagination for better performance
       console.log('Fetching contacts...');
-      const { data } = await Contacts.getContactsAsync({
+      const contactsResult = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
       });
 
-      console.log('Total contacts fetched:', data?.length || 0);
+      console.log('Contacts result:', contactsResult);
+      const data = contactsResult.data || [];
+      console.log('Total contacts fetched:', data.length);
 
       if (!data || data.length === 0) {
-        Alert.alert('No Contacts', 'No contacts found on your device.');
+        console.log('No contacts data returned');
+        setShowContactsModal(true); // Show modal with empty state
+        setContacts([]);
         setLoadingContacts(false);
         return;
       }
@@ -182,35 +186,47 @@ export default function RepairAndService({ navigation, createdBy }) {
       const contactsWithPhones = data
         .filter(contact => {
           const hasPhone = contact.phoneNumbers && Array.isArray(contact.phoneNumbers) && contact.phoneNumbers.length > 0;
+          if (!hasPhone) {
+            console.log('Contact filtered out (no phone):', contact.name);
+          }
           return hasPhone;
         })
         .map(contact => {
           const phoneNumbers = (contact.phoneNumbers || [])
-            .filter(phone => phone && phone.number)
-            .map(phone => ({
-              number: (phone.number || '').replace(/[^0-9]/g, ''), // Remove non-digits
-              label: phone.label || 'mobile',
-            }));
+            .filter(phone => {
+              const hasValidNumber = phone && phone.number && phone.number.trim().length > 0;
+              if (!hasValidNumber) {
+                console.log('Phone number filtered out:', phone);
+              }
+              return hasValidNumber;
+            })
+            .map(phone => {
+              const cleanedNumber = (phone.number || '').replace(/[^0-9]/g, '');
+              return {
+                number: cleanedNumber,
+                label: phone.label || 'mobile',
+              };
+            });
           
-          return {
-            id: contact.id || `contact_${Math.random()}`,
+          const contactData = {
+            id: contact.id || `contact_${contact.name}_${Math.random()}`,
             name: contact.name || 'Unknown',
             phoneNumbers: phoneNumbers,
           };
+          
+          console.log('Processed contact:', contactData.name, 'with', phoneNumbers.length, 'phone numbers');
+          return contactData;
         })
-        .filter(contact => contact.phoneNumbers.length > 0); // Only keep contacts with valid phone numbers
+        .filter(contact => contact.phoneNumbers && contact.phoneNumbers.length > 0); // Only keep contacts with valid phone numbers
 
       console.log('Contacts with phones:', contactsWithPhones.length);
-
-      if (contactsWithPhones.length === 0) {
-        Alert.alert('No Phone Numbers', 'No contacts with phone numbers found on your device.');
-        setLoadingContacts(false);
-        return;
+      if (contactsWithPhones.length > 0) {
+        console.log('Sample contact:', contactsWithPhones[0]);
       }
 
       setContacts(contactsWithPhones);
       setShowContactsModal(true);
-      console.log('Modal should be visible now');
+      console.log('Modal opened with', contactsWithPhones.length, 'contacts');
     } catch (error) {
       console.error('Error loading contacts:', error);
       console.error('Error stack:', error.stack);
@@ -839,34 +855,48 @@ export default function RepairAndService({ navigation, createdBy }) {
                 <Icon name="close-outline" size={28} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
-            {contacts.length === 0 ? (
+            {loadingContacts ? (
               <View style={styles.emptyContactsContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.emptyContactsText}>Loading contacts...</Text>
+              </View>
+            ) : contacts.length === 0 ? (
+              <View style={styles.emptyContactsContainer}>
+                <Icon name="person-outline" size={48} color={colors.textSecondary} />
                 <Text style={styles.emptyContactsText}>No contacts found</Text>
+                <Text style={styles.emptyContactsSubtext}>
+                  Make sure you have contacts with phone numbers on your device
+                </Text>
               </View>
             ) : (
               <FlatList
                 data={contacts}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.id || `contact_${item.name}_${Math.random()}`}
                 renderItem={({ item }) => (
                   <View style={styles.contactItem}>
                     <View style={styles.contactInfo}>
                       <Text style={styles.contactName}>{item.name}</Text>
-                      {item.phoneNumbers.map((phone, index) => (
-                        <TouchableOpacity
-                          key={index}
-                          style={styles.phoneNumberItem}
-                          onPress={() => selectContact(item, phone.number)}
-                        >
-                          <Icon name="call-outline" size={18} color={colors.primary} />
-                          <Text style={styles.phoneNumberText}>
-                            {phone.label}: {phone.number.length > 10 ? phone.number.slice(-10) : phone.number}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
+                      {item.phoneNumbers && item.phoneNumbers.length > 0 ? (
+                        item.phoneNumbers.map((phone, index) => (
+                          <TouchableOpacity
+                            key={index}
+                            style={styles.phoneNumberItem}
+                            onPress={() => selectContact(item, phone.number)}
+                          >
+                            <Icon name="call-outline" size={18} color={colors.primary} />
+                            <Text style={styles.phoneNumberText}>
+                              {phone.label}: {phone.number.length > 10 ? phone.number.slice(-10) : phone.number}
+                            </Text>
+                          </TouchableOpacity>
+                        ))
+                      ) : (
+                        <Text style={styles.noPhoneText}>No phone numbers</Text>
+                      )}
                     </View>
                   </View>
                 )}
                 style={styles.contactsList}
+                contentContainerStyle={styles.contactsListContent}
               />
             )}
           </View>
@@ -1284,6 +1314,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     maxHeight: '80%',
     paddingBottom: 20,
+    minHeight: 200,
   },
   contactsModalHeader: {
     flexDirection: 'row',
@@ -1308,9 +1339,28 @@ const styles = StyleSheet.create({
   emptyContactsText: {
     fontSize: 16,
     color: colors.textSecondary,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  emptyContactsSubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  noPhoneText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  contactsListContent: {
+    paddingBottom: 20,
   },
   contactsList: {
     flex: 1,
+    maxHeight: 500,
   },
   contactItem: {
     padding: 16,
