@@ -48,6 +48,7 @@ export default function RepairAndService({ navigation, createdBy }) {
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [contacts, setContacts] = useState([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
+  const [contactsSearchQuery, setContactsSearchQuery] = useState('');
   
   // Show previous problems for the current Unique ID (beside Check ID)
   const getDetailsForCurrentId = async () => {
@@ -96,6 +97,7 @@ export default function RepairAndService({ navigation, createdBy }) {
 
   // Load latest data and update local state used by this screen
   const loadData = async () => {
+    if (refreshing) return; // Prevent multiple simultaneous refreshes
     try {
       setRefreshing(true);
       const response = await getRepairs();
@@ -106,10 +108,71 @@ export default function RepairAndService({ navigation, createdBy }) {
         setLocalRepairs([]);
       }
     } catch (error) {
+      console.error('Error loading data:', error);
       setLocalRepairs([]);
     } finally {
       setRefreshing(false);
     }
+  };
+
+  // Handle refresh action
+  const handleRefresh = async () => {
+    // Clear form fields
+    const { date, time } = getCurrentDateTime();
+    // Generate new ID after refresh
+    try {
+      const response = await getRepairs();
+      if (response.success) {
+        const repairs = response.data || [];
+        const nextId = repairs.length > 0 
+          ? Math.max(...repairs.map(r => parseInt(r.uniqueId) || 0)) + 1
+          : 1;
+        setFormData({
+          date,
+          time,
+          uniqueId: String(nextId),
+          customerName: '',
+          phoneNumber: '',
+          type: '',
+          brand: '',
+          adapterGiven: null,
+          problem: '',
+          expectedAmount: '',
+        });
+      } else {
+        setFormData({
+          date,
+          time,
+          uniqueId: '1',
+          customerName: '',
+          phoneNumber: '',
+          type: '',
+          brand: '',
+          adapterGiven: null,
+          problem: '',
+          expectedAmount: '',
+        });
+      }
+    } catch (error) {
+      setFormData({
+        date,
+        time,
+        uniqueId: '1',
+        customerName: '',
+        phoneNumber: '',
+        type: '',
+        brand: '',
+        adapterGiven: null,
+        problem: '',
+        expectedAmount: '',
+      });
+    }
+    // Clear search ID
+    setSearchId('');
+    setRepairHistory([]);
+    setShowHistory(false);
+    // Load data
+    await loadData();
   };
 
   // Generate new ID - ONLY call this for new entries
@@ -225,6 +288,7 @@ export default function RepairAndService({ navigation, createdBy }) {
       }
 
       setContacts(contactsWithPhones);
+      setContactsSearchQuery(''); // Reset search when opening modal
       setShowContactsModal(true);
       console.log('Modal opened with', contactsWithPhones.length, 'contacts');
     } catch (error) {
@@ -511,7 +575,12 @@ export default function RepairAndService({ navigation, createdBy }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={loadData} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
         }
       >
         <View style={styles.header}>
@@ -849,12 +918,38 @@ export default function RepairAndService({ navigation, createdBy }) {
             <View style={styles.contactsModalHeader}>
               <Text style={styles.contactsModalTitle}>Select Contact</Text>
               <TouchableOpacity
-                onPress={() => setShowContactsModal(false)}
+                onPress={() => {
+                  setShowContactsModal(false);
+                  setContactsSearchQuery('');
+                }}
                 style={styles.closeButton}
               >
                 <Icon name="close-outline" size={28} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
+            
+            {/* Search Bar */}
+            <View style={styles.searchBarContainer}>
+              <Icon name="search-outline" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search contacts by name or number..."
+                placeholderTextColor={colors.textSecondary}
+                value={contactsSearchQuery}
+                onChangeText={setContactsSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {contactsSearchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setContactsSearchQuery('')}
+                  style={styles.clearSearchButton}
+                >
+                  <Icon name="close-circle" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+
             {loadingContacts ? (
               <View style={styles.emptyContactsContainer}>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -868,10 +963,30 @@ export default function RepairAndService({ navigation, createdBy }) {
                   Make sure you have contacts with phone numbers on your device
                 </Text>
               </View>
-            ) : (
-              <FlatList
-                data={contacts}
-                keyExtractor={(item) => item.id || `contact_${item.name}_${Math.random()}`}
+            ) : (() => {
+              // Filter contacts based on search query
+              const filteredContacts = contacts.filter(contact => {
+                if (!contactsSearchQuery.trim()) return true;
+                const query = contactsSearchQuery.toLowerCase().trim();
+                const nameMatch = contact.name.toLowerCase().includes(query);
+                const phoneMatch = contact.phoneNumbers.some(phone => 
+                  phone.number.includes(query)
+                );
+                return nameMatch || phoneMatch;
+              });
+
+              return filteredContacts.length === 0 && contactsSearchQuery.trim() ? (
+                <View style={styles.emptyContactsContainer}>
+                  <Icon name="search-outline" size={48} color={colors.textSecondary} />
+                  <Text style={styles.emptyContactsText}>No contacts found</Text>
+                  <Text style={styles.emptyContactsSubtext}>
+                    Try a different search term
+                  </Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={filteredContacts}
+                  keyExtractor={(item) => item.id || `contact_${item.name}_${Math.random()}`}
                 renderItem={({ item }) => (
                   <View style={styles.contactItem}>
                     <View style={styles.contactInfo}>
@@ -895,10 +1010,11 @@ export default function RepairAndService({ navigation, createdBy }) {
                     </View>
                   </View>
                 )}
-                style={styles.contactsList}
-                contentContainerStyle={styles.contactsListContent}
-              />
-            )}
+                  style={styles.contactsList}
+                  contentContainerStyle={styles.contactsListContent}
+                />
+              );
+            })()}
           </View>
         </View>
       </Modal>
@@ -922,10 +1038,12 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: 90,
+    flexGrow: 1,
   },
   contentAdmin: {
     padding: 0,
     paddingBottom: 90,
+    flexGrow: 1,
   },
   header: {
     marginBottom: 30,
@@ -1312,17 +1430,40 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '80%',
+    height: '85%',
     paddingBottom: 20,
-    minHeight: 200,
   },
   contactsModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+  },
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 10,
+    marginHorizontal: 20,
+    marginVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.textPrimary,
+    padding: 0,
+  },
+  clearSearchButton: {
+    marginLeft: 8,
+    padding: 4,
   },
   contactsModalTitle: {
     fontSize: 20,
@@ -1360,7 +1501,6 @@ const styles = StyleSheet.create({
   },
   contactsList: {
     flex: 1,
-    maxHeight: 500,
   },
   contactItem: {
     padding: 16,
