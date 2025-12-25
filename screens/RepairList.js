@@ -357,6 +357,16 @@ export default function RepairList({ navigation, isAdmin = false }) {
                 </Text>
               </View>
             )}
+            {item.adapterGiven !== undefined && item.adapterGiven !== null && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Adapter: </Text>
+                  <Text style={item.adapterGiven ? styles.adapterGivenText : styles.adapterNotGivenText}>
+                    {item.adapterGiven ? 'Given' : 'Not Given'}
+                  </Text>
+                </Text>
+              </View>
+            )}
             <View style={styles.detailRow}>
               <Text style={styles.detailText}>
                 <Text style={styles.detailLabel}>Problem: </Text>
@@ -873,6 +883,16 @@ const styles = StyleSheet.create({
   expectedAmountDetailText: {
     fontSize: 14,
     color: '#FF9800',
+    fontWeight: '700',
+  },
+  adapterGivenText: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '700',
+  },
+  adapterNotGivenText: {
+    fontSize: 14,
+    color: '#9E9E9E',
     fontWeight: '700',
   },
   statusBadge: {
