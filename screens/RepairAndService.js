@@ -13,12 +13,15 @@ import {
   Modal,
   Platform,
   ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Contacts from 'expo-contacts';
 import { saveRepair, getRepairs, getRepairById } from '../services/api';
 import { getCurrentDateTime, parseDateTime, formatDate, formatTime } from '../utils/dateTime';
 import { colors, spacing } from '../utils/theme';
 import AppHeader from '../components/AppHeader';
+import Icon from '../components/Icon';
 
 export default function RepairAndService({ navigation, createdBy }) {
   const [formData, setFormData] = useState({
@@ -42,6 +45,9 @@ export default function RepairAndService({ navigation, createdBy }) {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showContactsModal, setShowContactsModal] = useState(false);
+  const [contacts, setContacts] = useState([]);
+  const [loadingContacts, setLoadingContacts] = useState(false);
   
   // Show previous problems for the current Unique ID (beside Check ID)
   const getDetailsForCurrentId = async () => {
@@ -128,6 +134,122 @@ export default function RepairAndService({ navigation, createdBy }) {
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Request contacts permission and load contacts
+  const loadContacts = async () => {
+    try {
+      console.log('loadContacts called');
+      setLoadingContacts(true);
+      
+      // Check existing permissions first
+      const existingPermission = await Contacts.getPermissionsAsync();
+      console.log('Existing permission:', existingPermission.status);
+      
+      // Request permissions if not granted
+      let permissionStatus = existingPermission.status;
+      if (existingPermission.status !== 'granted') {
+        const permissionResult = await Contacts.requestPermissionsAsync();
+        permissionStatus = permissionResult.status;
+        console.log('Permission request result:', permissionStatus);
+      }
+      
+      if (permissionStatus !== 'granted') {
+        Alert.alert(
+          'Permission Denied', 
+          'Contacts permission is required to select phone numbers from your contacts. Please grant permission in your device settings.',
+          [{ text: 'OK' }]
+        );
+        setLoadingContacts(false);
+        return;
+      }
+
+      // Get contacts with pagination for better performance
+      console.log('Fetching contacts...');
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+      });
+
+      console.log('Total contacts fetched:', data?.length || 0);
+
+      if (!data || data.length === 0) {
+        Alert.alert('No Contacts', 'No contacts found on your device.');
+        setLoadingContacts(false);
+        return;
+      }
+
+      // Filter contacts that have phone numbers and format them
+      const contactsWithPhones = data
+        .filter(contact => {
+          const hasPhone = contact.phoneNumbers && Array.isArray(contact.phoneNumbers) && contact.phoneNumbers.length > 0;
+          return hasPhone;
+        })
+        .map(contact => {
+          const phoneNumbers = (contact.phoneNumbers || [])
+            .filter(phone => phone && phone.number)
+            .map(phone => ({
+              number: (phone.number || '').replace(/[^0-9]/g, ''), // Remove non-digits
+              label: phone.label || 'mobile',
+            }));
+          
+          return {
+            id: contact.id || `contact_${Math.random()}`,
+            name: contact.name || 'Unknown',
+            phoneNumbers: phoneNumbers,
+          };
+        })
+        .filter(contact => contact.phoneNumbers.length > 0); // Only keep contacts with valid phone numbers
+
+      console.log('Contacts with phones:', contactsWithPhones.length);
+
+      if (contactsWithPhones.length === 0) {
+        Alert.alert('No Phone Numbers', 'No contacts with phone numbers found on your device.');
+        setLoadingContacts(false);
+        return;
+      }
+
+      setContacts(contactsWithPhones);
+      setShowContactsModal(true);
+      console.log('Modal should be visible now');
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+      console.error('Error stack:', error.stack);
+      Alert.alert(
+        'Error', 
+        `Failed to load contacts: ${error.message || 'Unknown error'}. Please check console for details.`,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoadingContacts(false);
+    }
+  };
+
+  // Select a contact and fill phone number (and optionally name)
+  const selectContact = (contact, phoneNumber) => {
+    // Extract digits from phone number (remove spaces, dashes, etc.)
+    const digitsOnly = (phoneNumber || '').replace(/[^0-9]/g, '');
+    
+    if (!digitsOnly || digitsOnly.length === 0) {
+      Alert.alert('Invalid Number', 'This contact does not have a valid phone number.');
+      return;
+    }
+    
+    let phone = digitsOnly;
+    
+    // If number is longer than 10 digits, take last 10 (assuming country code)
+    if (phone.length > 10) {
+      phone = phone.slice(-10);
+    }
+    // Allow numbers less than 10 digits (will show validation error in form)
+    
+    console.log('Selected contact:', contact.name, 'Phone:', phone);
+
+    setFormData(prev => ({
+      ...prev,
+      phoneNumber: phone,
+      customerName: prev.customerName || contact.name, // Only fill name if empty
+    }));
+    setShowContactsModal(false);
   };
 
   // Check if ID exists; if yes, auto-fill customer name and phone
@@ -561,18 +683,31 @@ export default function RepairAndService({ navigation, createdBy }) {
         {/* Phone Number */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Phone Number *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.phoneNumber}
-            onChangeText={(value) => {
-              // Only allow digits and limit to 10 digits
-              const digitsOnly = value.replace(/[^0-9]/g, '').slice(0, 10);
-              handleInputChange('phoneNumber', digitsOnly);
-            }}
-            placeholder="Enter 10 digit phone number"
-            keyboardType="phone-pad"
-            maxLength={10}
-          />
+          <View style={styles.phoneInputContainer}>
+            <TextInput
+              style={[styles.input, styles.phoneInput]}
+              value={formData.phoneNumber}
+              onChangeText={(value) => {
+                // Only allow digits and limit to 10 digits
+                const digitsOnly = value.replace(/[^0-9]/g, '').slice(0, 10);
+                handleInputChange('phoneNumber', digitsOnly);
+              }}
+              placeholder="Enter 10 digit phone number"
+              keyboardType="phone-pad"
+              maxLength={10}
+            />
+            <TouchableOpacity
+              style={styles.contactButton}
+              onPress={loadContacts}
+              disabled={loadingContacts}
+            >
+              {loadingContacts ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Icon name="person-outline" size={24} color={colors.primary} />
+              )}
+            </TouchableOpacity>
+          </View>
           {formData.phoneNumber.length > 0 && formData.phoneNumber.length !== 10 && (
             <Text style={styles.errorText}>Phone number must be exactly 10 digits</Text>
           )}
@@ -685,6 +820,58 @@ export default function RepairAndService({ navigation, createdBy }) {
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Contacts Modal */}
+      <Modal
+        visible={showContactsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowContactsModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.contactsModalContent}>
+            <View style={styles.contactsModalHeader}>
+              <Text style={styles.contactsModalTitle}>Select Contact</Text>
+              <TouchableOpacity
+                onPress={() => setShowContactsModal(false)}
+                style={styles.closeButton}
+              >
+                <Icon name="close-outline" size={28} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            {contacts.length === 0 ? (
+              <View style={styles.emptyContactsContainer}>
+                <Text style={styles.emptyContactsText}>No contacts found</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={contacts}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={styles.contactItem}>
+                    <View style={styles.contactInfo}>
+                      <Text style={styles.contactName}>{item.name}</Text>
+                      {item.phoneNumbers.map((phone, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={styles.phoneNumberItem}
+                          onPress={() => selectContact(item, phone.number)}
+                        >
+                          <Icon name="call-outline" size={18} color={colors.primary} />
+                          <Text style={styles.phoneNumberText}>
+                            {phone.label}: {phone.number.length > 10 ? phone.number.slice(-10) : phone.number}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+                style={styles.contactsList}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1067,5 +1254,91 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 6,
     fontWeight: '500',
+  },
+  phoneInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  phoneInput: {
+    flex: 1,
+    marginRight: 8,
+  },
+  contactButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  contactsModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 20,
+  },
+  contactsModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  contactsModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  emptyContactsContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyContactsText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  contactsList: {
+    flex: 1,
+  },
+  contactItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  contactInfo: {
+    flex: 1,
+  },
+  contactName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  phoneNumberItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  phoneNumberText: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    marginLeft: 8,
+    flex: 1,
   },
 });
