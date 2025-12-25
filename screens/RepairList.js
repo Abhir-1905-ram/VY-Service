@@ -37,6 +37,8 @@ export default function RepairList({ navigation, isAdmin = false }) {
   const [amountText, setAmountText] = useState('');
   const [amountTarget, setAmountTarget] = useState(null); // repair object
   const [savingDelivered, setSavingDelivered] = useState(false);
+  const [phoneModalVisible, setPhoneModalVisible] = useState(false);
+  const [phoneNumbers, setPhoneNumbers] = useState([]);
 
   useEffect(() => {
     loadRepairs();
@@ -232,26 +234,21 @@ export default function RepairList({ navigation, isAdmin = false }) {
     }
 
     // Check if phone number contains multiple numbers (comma-separated)
-    const phoneNumbers = phoneNumber.split(',').map(p => p.trim()).filter(p => p.length > 0);
+    const numbers = phoneNumber.split(',').map(p => p.trim()).filter(p => p.length > 0);
     
-    if (phoneNumbers.length > 1) {
-      // Multiple phone numbers - show selection dialog
-      const buttons = phoneNumbers.map((phone, index) => ({
-        text: phone,
-        onPress: () => makeCall(phone),
-      }));
-      buttons.push({ text: 'Cancel', style: 'cancel' });
-      
-      Alert.alert(
-        'Select Phone Number',
-        'Which number would you like to call?',
-        buttons,
-        { cancelable: true }
-      );
+    if (numbers.length > 1) {
+      // Multiple phone numbers - show custom modal
+      setPhoneNumbers(numbers);
+      setPhoneModalVisible(true);
     } else {
       // Single phone number - call directly
-      makeCall(phoneNumbers[0] || phoneNumber);
+      makeCall(numbers[0] || phoneNumber);
     }
+  };
+
+  const handlePhoneSelect = (selectedPhone) => {
+    setPhoneModalVisible(false);
+    makeCall(selectedPhone);
   };
 
   const makeCall = (phoneNumber) => {
@@ -657,6 +654,40 @@ export default function RepairList({ navigation, isAdmin = false }) {
         </View>
       </Modal>
 
+      {/* Phone Number Selection Modal */}
+      <Modal
+        visible={phoneModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPhoneModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Select Phone Number</Text>
+            <View style={styles.phoneListContainer}>
+              {phoneNumbers.map((phone, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.phoneOption}
+                  onPress={() => handlePhoneSelect(phone)}
+                >
+                  <View style={styles.phoneOptionIcon}>
+                    <Text style={styles.phoneOptionIconText}>📞</Text>
+                  </View>
+                  <Text style={styles.phoneOptionText}>{phone}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={[styles.modalBtn, { backgroundColor: '#9E9E9E', marginTop: 12 }]}
+              onPress={() => setPhoneModalVisible(false)}
+            >
+              <Text style={styles.modalBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -962,6 +993,39 @@ const styles = StyleSheet.create({
   modalBtnText: {
     color: '#fff',
     fontWeight: '800',
+  },
+  phoneListContainer: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  phoneOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  phoneOptionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  phoneOptionIconText: {
+    fontSize: 18,
+  },
+  phoneOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2C3E50',
+    flex: 1,
   },
   emptyContainer: {
     padding: 60,
