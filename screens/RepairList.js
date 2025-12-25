@@ -299,9 +299,6 @@ export default function RepairList({ navigation, isAdmin = false }) {
             {isDelivered && item.amount && (
               <Text style={styles.amountText}>Amount: ₹{item.amount.toFixed(2)}</Text>
             )}
-            {item.expectedAmount && (
-              <Text style={styles.expectedAmountText}>Expected: ₹{item.expectedAmount.toFixed(2)}</Text>
-            )}
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity
@@ -359,14 +356,6 @@ export default function RepairList({ navigation, isAdmin = false }) {
                 <Text style={styles.detailText}>
                   <Text style={styles.detailLabel}>Delivered Date: </Text>
                   {deliveredDate} {deliveredTime}
-                </Text>
-              </View>
-            )}
-            {item.expectedAmount && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Expected Amount: </Text>
-                  <Text style={styles.expectedAmountDetailText}>₹{item.expectedAmount.toFixed(2)}</Text>
                 </Text>
               </View>
             )}
