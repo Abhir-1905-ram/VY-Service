@@ -124,8 +124,10 @@ export default function RepairList({ navigation, isAdmin = false }) {
 
   const handleMarkAsDelivered = async (repair) => {
     // Open amount modal first (amount is optional)
+    // Pre-fill with expectedAmount if available
+    const prefillAmount = repair.expectedAmount ? String(repair.expectedAmount) : '';
     setAmountTarget(repair);
-    setAmountText('');
+    setAmountText(prefillAmount);
     setAmountModalVisible(true);
   };
 
@@ -297,6 +299,9 @@ export default function RepairList({ navigation, isAdmin = false }) {
             {isDelivered && item.amount && (
               <Text style={styles.amountText}>Amount: ₹{item.amount.toFixed(2)}</Text>
             )}
+            {item.expectedAmount && (
+              <Text style={styles.expectedAmountText}>Expected: ₹{item.expectedAmount.toFixed(2)}</Text>
+            )}
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity
@@ -357,11 +362,19 @@ export default function RepairList({ navigation, isAdmin = false }) {
                 </Text>
               </View>
             )}
+            {item.expectedAmount && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Expected Amount: </Text>
+                  <Text style={styles.expectedAmountDetailText}>₹{item.expectedAmount.toFixed(2)}</Text>
+                </Text>
+              </View>
+            )}
             {isDelivered && item.amount && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailText}>
                   <Text style={styles.detailLabel}>Amount: </Text>
-                  ₹{item.amount.toFixed(2)}
+                  <Text style={styles.amountText}>₹{item.amount.toFixed(2)}</Text>
                 </Text>
               </View>
             )}
@@ -801,6 +814,17 @@ const styles = StyleSheet.create({
     color: '#2E7D32',
     fontWeight: '700',
     marginTop: 4,
+  },
+  expectedAmountText: {
+    fontSize: 13,
+    color: '#FF9800',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  expectedAmountDetailText: {
+    fontSize: 14,
+    color: '#FF9800',
+    fontWeight: '700',
   },
   statusBadge: {
     paddingHorizontal: 10,

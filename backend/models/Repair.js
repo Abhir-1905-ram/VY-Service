@@ -64,6 +64,10 @@ const repairSchema = new mongoose.Schema({
     type: Number,
     default: null, // Optional amount for delivered items
   },
+  expectedAmount: {
+    type: Number,
+    default: null, // Optional expected amount when creating repair
+  },
 }, {
   timestamps: true,
 });

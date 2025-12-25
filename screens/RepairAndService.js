@@ -31,6 +31,7 @@ export default function RepairAndService({ navigation, createdBy }) {
     brand: '',
     adapterGiven: null,
     problem: '',
+    expectedAmount: '',
   });
   const [searchId, setSearchId] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -266,6 +267,16 @@ export default function RepairAndService({ navigation, createdBy }) {
       const dateTimeString = `${formData.date} ${formData.time}`;
       const createdAt = parseDateTime(dateTimeString);
 
+      // Parse expected amount (optional)
+      let expectedAmountValue = null;
+      const trimmedExpectedAmount = String(formData.expectedAmount || '').trim();
+      if (trimmedExpectedAmount) {
+        const parsed = parseFloat(trimmedExpectedAmount);
+        if (!isNaN(parsed) && parsed > 0) {
+          expectedAmountValue = parsed;
+        }
+      }
+
       const repairData = {
         uniqueId: formData.uniqueId,
         customerName: formData.customerName.trim(),
@@ -277,6 +288,7 @@ export default function RepairAndService({ navigation, createdBy }) {
         createdAt: createdAt.toISOString(),
         status: 'Pending',
         createdBy: createdBy || '',
+        expectedAmount: expectedAmountValue, // null if not provided or invalid
       };
 
       const response = await saveRepair(repairData);
@@ -298,6 +310,7 @@ export default function RepairAndService({ navigation, createdBy }) {
           brand: '',
           adapterGiven: null,
           problem: '',
+          expectedAmount: '',
         });
         setSearchId('');
         setRepairHistory([]);
@@ -637,6 +650,22 @@ export default function RepairAndService({ navigation, createdBy }) {
             multiline
             numberOfLines={4}
             textAlignVertical="top"
+          />
+        </View>
+
+        {/* Expected Amount (Optional) */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Expected Amount (Optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={formData.expectedAmount}
+            onChangeText={(value) => {
+              // Only allow numbers and decimal point
+              const numericValue = value.replace(/[^0-9.]/g, '');
+              handleInputChange('expectedAmount', numericValue);
+            }}
+            placeholder="Enter expected amount (e.g., 500)"
+            keyboardType="numeric"
           />
         </View>
 
