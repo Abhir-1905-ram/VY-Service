@@ -404,16 +404,14 @@ export default function RepairList({ navigation, isAdmin = false }) {
               </View>
             )}
             {/* Previous problems removed as requested */}
-            {isAdmin && (
-              <View style={{ marginTop: 8, flexDirection: 'row' }}>
-                <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: '#455A64' }]}
-                  onPress={() => navigation && navigation.navigate && navigation.navigate('AdminRepairEdit', { repair: item })}
-                >
-                  <Text style={styles.deliveredButtonText}>Edit</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            <View style={{ marginTop: 8, flexDirection: 'row' }}>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: '#455A64' }]}
+                onPress={() => navigation && navigation.navigate && navigation.navigate('AdminRepairEdit', { repair: item })}
+              >
+                <Text style={styles.deliveredButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
