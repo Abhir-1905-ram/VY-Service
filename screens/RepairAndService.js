@@ -477,7 +477,7 @@ export default function RepairAndService({ navigation, createdBy }) {
     for (let phone of validPhoneNumbers) {
       if (!phoneRegex.test(phone.trim())) {
         Alert.alert('Error', 'All phone numbers must be exactly 10 digits');
-        return;
+      return;
       }
     }
     if (!formData.type.trim()) {
@@ -808,14 +808,14 @@ export default function RepairAndService({ navigation, createdBy }) {
           {formData.phoneNumbers.map((phone, index) => (
             <View key={index} style={styles.phoneInputWrapper}>
               <View style={styles.phoneInputContainer}>
-                <TextInput
+          <TextInput
                   style={[styles.input, styles.phoneInput]}
                   value={phone}
                   onChangeText={(value) => updatePhoneNumber(index, value)}
-                  placeholder="Enter 10 digit phone number"
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                />
+            placeholder="Enter 10 digit phone number"
+            keyboardType="phone-pad"
+            maxLength={10}
+          />
                 {index === 0 && (
                   <TouchableOpacity
                     style={styles.contactButton}
@@ -839,8 +839,8 @@ export default function RepairAndService({ navigation, createdBy }) {
                 )}
               </View>
               {phone.length > 0 && phone.length !== 10 && (
-                <Text style={styles.errorText}>Phone number must be exactly 10 digits</Text>
-              )}
+            <Text style={styles.errorText}>Phone number must be exactly 10 digits</Text>
+          )}
             </View>
           ))}
           <TouchableOpacity
@@ -955,7 +955,7 @@ export default function RepairAndService({ navigation, createdBy }) {
               <Text style={styles.saveButtonText}>Saving...</Text>
             </View>
           ) : (
-            <Text style={styles.saveButtonText}>Save Entry</Text>
+          <Text style={styles.saveButtonText}>Save Entry</Text>
           )}
         </TouchableOpacity>
       </ScrollView>

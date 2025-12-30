@@ -211,5 +211,44 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// DELETE /api/repairs/:id - Delete a repair entry
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Only allow deletion of pending repairs
+    const repair = await Repair.findById(id);
+    if (!repair) {
+      return res.status(404).json({
+        success: false,
+        message: 'Repair entry not found',
+      });
+    }
+
+    // Check if repair is pending
+    if (repair.status !== 'Pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only pending repairs can be removed',
+      });
+    }
+
+    // Delete the repair
+    await Repair.findByIdAndDelete(id);
+
+    res.json({
+      success: true,
+      message: 'Repair entry removed successfully',
+      data: { id },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete repair entry',
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;
 

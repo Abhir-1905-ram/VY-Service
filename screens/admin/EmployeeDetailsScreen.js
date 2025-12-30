@@ -15,6 +15,7 @@ const CARD_OPTIONS = [
 export default function EmployeeDetailsScreen({ route, navigation }) {
   const { employee } = route.params || {};
   const [allowedCards, setAllowedCards] = useState(['repair-service', 'repair-list', 'attendance']);
+  const [canRemoveRepairs, setCanRemoveRepairs] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -33,6 +34,12 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
         console.log('Cards array type:', Array.isArray(res.data.allowedCards));
         console.log('Cards array length:', res.data.allowedCards.length);
         setAllowedCards(res.data.allowedCards);
+        // Load canRemoveRepairs permission
+        if (res.data.canRemoveRepairs !== undefined) {
+          setCanRemoveRepairs(res.data.canRemoveRepairs);
+        } else if (employee.canRemoveRepairs !== undefined) {
+          setCanRemoveRepairs(employee.canRemoveRepairs);
+        }
       } else {
         // If API fails, try employee object, otherwise use defaults
         if (employee.allowedCards !== undefined) {
@@ -42,6 +49,9 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
           console.log('No cards found, using defaults');
           setAllowedCards(['repair-service', 'repair-list', 'attendance']);
         }
+        if (employee.canRemoveRepairs !== undefined) {
+          setCanRemoveRepairs(employee.canRemoveRepairs);
+        }
       }
     } catch (error) {
       console.error('Error loading cards:', error);
@@ -49,6 +59,9 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
         setAllowedCards(employee.allowedCards);
       } else {
         setAllowedCards(['repair-service', 'repair-list', 'attendance']);
+      }
+      if (employee.canRemoveRepairs !== undefined) {
+        setCanRemoveRepairs(employee.canRemoveRepairs);
       }
     } finally {
       setLoading(false);
@@ -104,11 +117,12 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
       // Ensure we're sending an array, even if empty
       const cardsToSave = Array.isArray(allowedCards) ? allowedCards : [];
       
-      const res = await updateEmployeeCards(employee._id, cardsToSave);
+      const res = await updateEmployeeCards(employee._id, cardsToSave, canRemoveRepairs);
       
       if (res.success) {
         // Get the saved cards from response
         let savedCards = res.data?.allowedCards;
+        let savedCanRemove = res.data?.canRemoveRepairs;
         
         // If not in response or not an array, reload from API to verify
         if (!savedCards || !Array.isArray(savedCards)) {
@@ -120,19 +134,28 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
             savedCards = cardsToSave;
           }
         }
+        if (savedCanRemove === undefined) {
+          const verifyRes = await getEmployeeCards(employee._id);
+          if (verifyRes.success && verifyRes.data?.canRemoveRepairs !== undefined) {
+            savedCanRemove = verifyRes.data.canRemoveRepairs;
+          } else {
+            savedCanRemove = canRemoveRepairs;
+          }
+        }
         
-        // Update local state with the confirmed saved cards
+        // Update local state with the confirmed saved values
         setAllowedCards(savedCards);
+        setCanRemoveRepairs(savedCanRemove);
         
-        Alert.alert('Success', `Card permissions updated successfully!\n\nAllowed cards: ${savedCards.length}`, [
+        Alert.alert('Success', `Permissions updated successfully!\n\nAllowed cards: ${savedCards.length}\nCan remove repairs: ${savedCanRemove ? 'Yes' : 'No'}`, [
           { text: 'OK', onPress: () => navigation.goBack() }
         ]);
       } else {
-        Alert.alert('Error', res.message || 'Failed to update card permissions');
+        Alert.alert('Error', res.message || 'Failed to update permissions');
       }
     } catch (error) {
       console.error('Save error:', error);
-      Alert.alert('Error', error.message || 'Failed to update card permissions');
+      Alert.alert('Error', error.message || 'Failed to update permissions');
     } finally {
       setSaving(false);
     }
@@ -184,6 +207,26 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
             </View>
             );
           })}
+        </AppCard>
+
+        <AppCard style={{ marginTop: 16 }}>
+          <Text style={styles.title}>Repair List Permissions</Text>
+          <Text style={styles.subtitle}>Control special permissions for repair management</Text>
+          
+          <View style={styles.cardOption}>
+            <View style={styles.cardOptionContent}>
+              <Text style={styles.cardLabel}>Remove Pending Repairs</Text>
+              <Text style={styles.cardDescription}>
+                Allow employee to remove repair items from the Pending list
+              </Text>
+            </View>
+            <Switch
+              value={canRemoveRepairs}
+              onValueChange={setCanRemoveRepairs}
+              trackColor={{ false: '#E0E0E0', true: colors.secondary }}
+              thumbColor={canRemoveRepairs ? '#fff' : '#f4f3f4'}
+            />
+          </View>
         </AppCard>
 
         <AppButton

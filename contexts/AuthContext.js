@@ -30,7 +30,8 @@ export function AuthProvider({ children }) {
       role, 
       username: u.username, 
       id: u.id || null,
-      allowedCards: u.allowedCards || (role === 'employee' ? ['repair-service', 'repair-list', 'attendance'] : null)
+      allowedCards: u.allowedCards || (role === 'employee' ? ['repair-service', 'repair-list', 'attendance'] : null),
+      canRemoveRepairs: role === 'admin' ? true : (u.canRemoveRepairs || false) // Admins always have this permission
     };
     setUser(session);
     try {

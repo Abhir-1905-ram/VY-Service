@@ -9,6 +9,7 @@ const employeeSchema = new mongoose.Schema({
     default: ['repair-service', 'repair-list', 'attendance'], // Default: all cards allowed
     enum: ['repair-service', 'repair-list', 'attendance'], // Available card types
   },
+  canRemoveRepairs: { type: Boolean, default: false }, // Permission to remove pending repairs
 }, {
   timestamps: true,
 });

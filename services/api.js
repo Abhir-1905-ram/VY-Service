@@ -177,6 +177,27 @@ export const updateRepair = async (id, updateData) => {
   }
 };
 
+export const deleteRepair = async (id) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/repairs/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      return { success: true, data };
+    } else {
+      return { success: false, message: data.message || 'Failed to delete repair' };
+    }
+  } catch (error) {
+    return { success: false, message: error.message || 'Network error' };
+  }
+};
+
 // ---------- Auth & Employees ----------
 export const login = async (username, password) => {
   try {
@@ -332,12 +353,16 @@ export const getEmployeeCards = async (employeeId) => {
 };
 
 // Update allowed cards for an employee
-export const updateEmployeeCards = async (employeeId, allowedCards) => {
+export const updateEmployeeCards = async (employeeId, allowedCards, canRemoveRepairs) => {
   try {
+    const payload = { allowedCards };
+    if (canRemoveRepairs !== undefined) {
+      payload.canRemoveRepairs = canRemoveRepairs;
+    }
     const response = await fetch(`${API_BASE_URL}/employees/${employeeId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ allowedCards }),
+      body: JSON.stringify(payload),
     });
     const data = await response.json();
     if (response.ok) {

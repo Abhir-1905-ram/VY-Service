@@ -26,7 +26,8 @@ router.post('/login', async (req, res) => {
       user: { 
         id: emp._id, 
         username: emp.username,
-        allowedCards: emp.allowedCards || ['repair-service', 'repair-list', 'attendance']
+        allowedCards: emp.allowedCards || ['repair-service', 'repair-list', 'attendance'],
+        canRemoveRepairs: emp.canRemoveRepairs || false
       } 
     });
   } catch (e) {

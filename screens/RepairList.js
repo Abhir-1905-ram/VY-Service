@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,16 +12,21 @@ import {
   RefreshControl,
   Linking,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import AppCard from '../components/AppCard';
 import StatusBadge from '../components/StatusBadge';
 import AppButton from '../components/AppButton';
 import AppHeader from '../components/AppHeader';
-import { getRepairs, updateRepair } from '../services/api';
+import { getRepairs, updateRepair, deleteRepair } from '../services/api';
 import { colors, spacing, radii } from '../utils/theme';
 import { formatDate, formatTime, getCurrentDateTime, parseDateTime } from '../utils/dateTime';
+import { AuthContext } from '../contexts/AuthContext';
 
 export default function RepairList({ navigation, isAdmin = false }) {
+  const { user } = useContext(AuthContext);
+  // Check if user has permission to remove repairs (admins always have this, employees need explicit permission)
+  const canRemoveRepairs = isAdmin || (user?.canRemoveRepairs === true);
   const [repairs, setRepairs] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -39,6 +44,7 @@ export default function RepairList({ navigation, isAdmin = false }) {
   const [savingDelivered, setSavingDelivered] = useState(false);
   const [phoneModalVisible, setPhoneModalVisible] = useState(false);
   const [phoneNumbers, setPhoneNumbers] = useState([]);
+  const [removing, setRemoving] = useState({}); // Track which repair is being removed
 
   useEffect(() => {
     loadRepairs();
@@ -122,6 +128,49 @@ export default function RepairList({ navigation, isAdmin = false }) {
 
   const handleMarkAsCompleted = async (repair) => {
     openRemarkModal(repair, 'Completed');
+  };
+
+  const handleRemove = async (repair) => {
+    // Only allow removing pending repairs
+    if (repair.status !== 'Pending') {
+      Alert.alert('Error', 'Only pending repairs can be removed');
+      return;
+    }
+
+    // Confirm deletion
+    Alert.alert(
+      'Remove Repair',
+      'Are you sure you want to remove this repair item? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            setRemoving(prev => ({ ...prev, [repair._id]: true }));
+            try {
+              const response = await deleteRepair(repair._id);
+              if (response.success) {
+                // Optimistically update UI - remove from list
+                setRepairs(prev => prev.filter(r => r._id !== repair._id));
+                Alert.alert('Success', 'Repair item removed successfully');
+              } else {
+                Alert.alert('Error', response.message || 'Failed to remove repair item');
+              }
+            } catch (error) {
+              console.error('Remove repair error:', error);
+              Alert.alert('Error', error.message || 'Failed to remove repair item');
+            } finally {
+              setRemoving(prev => {
+                const updated = { ...prev };
+                delete updated[repair._id];
+                return updated;
+              });
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleMarkAsDelivered = async (repair) => {
@@ -404,13 +453,26 @@ export default function RepairList({ navigation, isAdmin = false }) {
               </View>
             )}
             {/* Previous problems removed as requested */}
-            <View style={{ marginTop: 8, flexDirection: 'row' }}>
+            <View style={{ marginTop: 8, flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: '#455A64' }]}
                 onPress={() => navigation && navigation.navigate && navigation.navigate('AdminRepairEdit', { repair: item })}
               >
                 <Text style={styles.deliveredButtonText}>Edit</Text>
               </TouchableOpacity>
+              {item.status === 'Pending' && canRemoveRepairs && (
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.removeButton]}
+                  onPress={() => handleRemove(item)}
+                  disabled={removing[item._id]}
+                >
+                  {removing[item._id] ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.removeButtonText}>Remove</Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}
@@ -969,6 +1031,14 @@ const styles = StyleSheet.create({
   },
   pendingButton: {
     backgroundColor: colors.warning,
+  },
+  removeButton: {
+    backgroundColor: '#DC3545', // Red color for destructive action
+  },
+  removeButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   modalBackdrop: {
     flex: 1,

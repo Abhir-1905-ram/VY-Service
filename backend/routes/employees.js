@@ -25,7 +25,7 @@ router.post('/signup', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, password, allowedCards } = req.body || {};
+    const { username, password, allowedCards, canRemoveRepairs } = req.body || {};
     const update = {};
     if (username) {
       // ensure unique username
@@ -48,12 +48,25 @@ router.put('/:id', async (req, res) => {
         console.log('Updating allowedCards for employee', id, 'to empty array (invalid input)');
       }
     }
+    if (canRemoveRepairs !== undefined) {
+      update.canRemoveRepairs = Boolean(canRemoveRepairs);
+      console.log('Updating canRemoveRepairs for employee', id, 'to:', update.canRemoveRepairs);
+    }
     const emp = await Employee.findByIdAndUpdate(id, update, { new: true });
     if (!emp) return res.status(404).json({ success: false, message: 'Employee not found' });
     // Ensure allowedCards is always returned as an array
     const returnedCards = Array.isArray(emp.allowedCards) ? emp.allowedCards : (emp.allowedCards ? [emp.allowedCards] : []);
     console.log('Returning employee data with allowedCards:', returnedCards);
-    res.json({ success: true, data: { id: emp._id, username: emp.username, isApproved: emp.isApproved, allowedCards: returnedCards } });
+    res.json({ 
+      success: true, 
+      data: { 
+        id: emp._id, 
+        username: emp.username, 
+        isApproved: emp.isApproved, 
+        allowedCards: returnedCards,
+        canRemoveRepairs: emp.canRemoveRepairs || false
+      } 
+    });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to update employee', error: e.message });
   }
@@ -91,7 +104,13 @@ router.get('/:id/cards', async (req, res) => {
       cards = emp.allowedCards;
     }
     console.log('GET cards for employee', id, 'returning:', cards);
-    res.json({ success: true, data: { allowedCards: cards } });
+    res.json({ 
+      success: true, 
+      data: { 
+        allowedCards: cards,
+        canRemoveRepairs: emp.canRemoveRepairs || false
+      } 
+    });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to fetch cards', error: e.message });
   }
