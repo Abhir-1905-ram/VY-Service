@@ -179,17 +179,45 @@ export const updateRepair = async (id, updateData) => {
 
 export const deleteRepair = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/repairs/${id}`, {
+    const url = `${API_BASE_URL}/repairs/${id}`;
+    const response = await fetch(url, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      // If DELETE fails, try fallback POST endpoint
+      const fbResp = await fetch(`${API_BASE_URL}/repairs/${id}/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const fbText = await fbResp.text();
+      let fbData;
+      try {
+        fbData = fbText ? JSON.parse(fbText) : {};
+      } catch (fbErr) {
+        // If parsing fails, response might be HTML or plain text
+        const snippet = (fbText || '').slice(0, 140);
+        return { 
+          success: false, 
+          message: `Unexpected response (${fbResp.status}). ${snippet}` 
+        };
+      }
+      if (fbResp.ok && fbData) {
+        return { success: true, data: fbData.data || fbData };
+      }
+      const msg = (fbData && fbData.message) || `Failed to delete repair`;
+      return { success: false, message: msg };
+    }
     
     if (response.ok) {
-      return { success: true, data };
+      return { success: true, data: data.data || data };
     } else {
       return { success: false, message: data.message || 'Failed to delete repair' };
     }

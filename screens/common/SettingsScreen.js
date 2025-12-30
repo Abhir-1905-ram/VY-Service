@@ -66,7 +66,7 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={{ marginHorizontal: -20, marginTop: -420 }}>
+      <View style={{ marginHorizontal: -20, marginTop: -355 }}>
         <AppHeader title="Settings" showBrand={false} onBackPress={() => navigation?.goBack()} />
       </View>
       <AppCard style={{ padding: 20, marginTop: 20 }}>
