@@ -13,6 +13,7 @@ import {
   Linking,
   Modal,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import AppCard from '../components/AppCard';
 import StatusBadge from '../components/StatusBadge';
@@ -300,25 +301,36 @@ export default function RepairList({ navigation, isAdmin = false }) {
     makeCall(selectedPhone);
   };
 
-  const makeCall = (phoneNumber) => {
+  const makeCall = async (phoneNumber) => {
     if (!phoneNumber) {
       Alert.alert('Error', 'Phone number not available');
       return;
     }
 
-    const phoneUrl = `tel:${phoneNumber}`;
-    Linking.canOpenURL(phoneUrl)
-      .then((supported) => {
-        if (supported) {
-          return Linking.openURL(phoneUrl);
-        } else {
-          Alert.alert('Error', 'Phone calls are not supported on this device');
-        }
-      })
-      .catch((error) => {
-        Alert.alert('Error', 'Failed to make phone call');
-        console.error('Call error:', error);
-      });
+    // Clean phone number: remove spaces, dashes, and other characters except digits and +
+    const cleanNumber = phoneNumber.trim().replace(/[^\d+]/g, '');
+    
+    if (!cleanNumber || cleanNumber.length === 0) {
+      Alert.alert('Error', 'Invalid phone number');
+      return;
+    }
+
+    const phoneUrl = `tel:${cleanNumber}`;
+    
+    try {
+      // Try to open the phone URL directly
+      // This will work on real devices with calling capability
+      await Linking.openURL(phoneUrl);
+    } catch (error) {
+      console.error('Call error:', error);
+      // Check if error is because device doesn't support calls (simulator/emulator)
+      Alert.alert(
+        'Cannot Make Call',
+        Platform.OS === 'android' 
+          ? 'Phone calls are not supported on Android emulators. Please test on a real device. The phone number is: ' + cleanNumber
+          : 'Phone calls are not supported on iOS simulators. Please test on a real device. The phone number is: ' + cleanNumber
+      );
+    }
   };
 
   // No previous problems section on list view per request
@@ -371,9 +383,6 @@ export default function RepairList({ navigation, isAdmin = false }) {
           <View style={styles.headerLeft}>
             <Text style={styles.customerName}>{item.customerName}</Text>
             <Text style={styles.repairId}>ID: {item.uniqueId}</Text>
-            {isDelivered && item.amount && (
-              <Text style={styles.amountText}>Amount: ₹{item.amount.toFixed(2)}</Text>
-            )}
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity
@@ -480,13 +489,19 @@ export default function RepairList({ navigation, isAdmin = false }) {
         {item.status === 'Pending' && (
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
-              style={[styles.actionButton, styles.callButton]}
+              style={[styles.actionButton, styles.pendingActionButton, styles.callButton]}
+              onPress={() => handleCall(item.phoneNumber)}
+            >
+              <Text style={styles.callButtonText}>Call</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.pendingActionButton, { backgroundColor: colors.success }]}
               onPress={() => handleMarkAsCompleted(item)}
             >
               <Text style={styles.callButtonText}>Completed</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionButton, styles.notCompletedButton]}
+              style={[styles.actionButton, styles.pendingActionButton, styles.notCompletedButton]}
               onPress={() => handleMarkAsNotCompleted(item)}
             >
               <Text style={styles.deliveredButtonText}>Not Completed</Text>
@@ -996,27 +1011,35 @@ const styles = StyleSheet.create({
   },
   actionButtonsContainer: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginTop: 6,
+    flexWrap: 'nowrap',
   },
   actionButton: {
     flex: 1,
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    minWidth: 0,
+  },
+  pendingActionButton: {
+    paddingVertical: 6,
   },
   callButton: {
     backgroundColor: colors.secondary,
   },
   callButtonText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
+    textAlign: 'center',
   },
   notCompletedButton: {
     backgroundColor: '#9E9E9E',
@@ -1026,8 +1049,9 @@ const styles = StyleSheet.create({
   },
   deliveredButtonText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
   },
   pendingButton: {
     backgroundColor: colors.warning,
