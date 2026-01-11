@@ -61,11 +61,13 @@ router.post('/', async (req, res) => {
       console.log('═══════════════════════════════════════════════════════');
       console.log('📋 Repair Data:', JSON.stringify({
         phoneNumber: repairData.phoneNumber,
+        customerName: repairData.customerName,
         type: repairData.type,
         brand: repairData.brand
       }, null, 2));
       
       const message = generateRepairNotificationMessage(
+        repairData.customerName,
         repairData.type,
         repairData.brand
       );
@@ -91,6 +93,13 @@ router.post('/', async (req, res) => {
       if (failed > 0) {
         smsResults.filter(r => !r.success).forEach(r => {
           console.error(`  ❌ ${r.phoneNumber}: ${r.message}`);
+          
+          // Show special instructions for transaction requirement
+          if (r.requiresTransaction) {
+            console.error(`     ⚠️  ACTION REQUIRED: Complete a transaction of 100 INR or more in Fast2SMS`);
+            console.error(`     📱 Visit: https://www.fast2sms.com to add credits and activate API`);
+          }
+          
           if (r.responseData) {
             console.error(`     Response Data:`, JSON.stringify(r.responseData, null, 2));
           }

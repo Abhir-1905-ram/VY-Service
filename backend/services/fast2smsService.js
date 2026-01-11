@@ -39,10 +39,13 @@ function formatPhoneNumber(phoneNumber) {
 /**
  * Generate repair notification message
  */
-function generateRepairNotificationMessage(deviceType, deviceBrand) {
-  return `Vyshnavi Computers
-Repair work on your ${deviceType} (${deviceBrand}) has started.
-Thank you`;
+function generateRepairNotificationMessage(customerName, deviceType, deviceBrand) {
+  return `Hello ${customerName},
+
+Your ${deviceBrand} ${deviceType} has been successfully registered for repair.
+Our team has started working on your device and will notify you once it's ready.
+
+Thank you for choosing our service! 🙏`;
 }
 
 /**
@@ -122,6 +125,32 @@ async function sendSMS(phoneNumber, message) {
       console.error('❌ Response Status:', error.response.status);
       console.error('❌ Response Data:', JSON.stringify(error.response.data, null, 2));
       
+      const responseData = error.response.data || {};
+      const internalStatusCode = responseData.status_code || responseData.statusCode;
+      
+      // Handle special case: Minimum transaction requirement (Status Code 999)
+      if (internalStatusCode === 999 || (responseData.message && responseData.message.includes('100 INR'))) {
+        const errorMsg = 'Fast2SMS API requires a minimum transaction of 100 INR before activation. Please add credits to your account at https://www.fast2sms.com';
+        console.error('\n⚠️  ═══════════════════════════════════════════════════');
+        console.error('⚠️  FAST2SMS ACCOUNT ACTIVATION REQUIRED');
+        console.error('⚠️  ═══════════════════════════════════════════════════');
+        console.error('📋 To activate your Fast2SMS API, you need to:');
+        console.error('   1. Login to https://www.fast2sms.com');
+        console.error('   2. Add credits (minimum 100 INR) to your wallet');
+        console.error('   3. Send at least one SMS worth 100 INR or more');
+        console.error('   4. After completing the transaction, API will be activated');
+        console.error('⚠️  ═══════════════════════════════════════════════════\n');
+        
+        return {
+          success: false,
+          message: errorMsg,
+          statusCode: error.response.status,
+          internalStatusCode: internalStatusCode,
+          responseData: responseData,
+          requiresTransaction: true,
+        };
+      }
+      
       // Common Fast2SMS error codes with helpful messages
       const errorMessages = {
         401: 'Invalid Authentication - Check your Fast2SMS API key',
@@ -133,12 +162,12 @@ async function sendSMS(phoneNumber, message) {
       
       const statusCode = error.response.status;
       const errorMsg = errorMessages[statusCode] || 
-                      error.response.data?.message || 
-                      error.response.data?.msg || 
+                      responseData.message || 
+                      responseData.msg || 
                       error.message || 
                       'Failed to send SMS';
       
-      console.error(`💡 Error Code ${statusCode}: ${errorMsg}`);
+      console.error(`💡 Error Code ${statusCode}${internalStatusCode ? ` (internal: ${internalStatusCode})` : ''}: ${errorMsg}`);
       
       return {
         success: false,
