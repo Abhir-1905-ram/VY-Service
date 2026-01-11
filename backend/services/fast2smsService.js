@@ -47,7 +47,6 @@ function generateRepairNotificationMessage(customerName, deviceType, deviceBrand
   return `Hello ${customerName},
 
 Your ${deviceBrand} ${deviceType} has been successfully registered for repair.
-
 Thank you for choosing our service! `;
 }
 
