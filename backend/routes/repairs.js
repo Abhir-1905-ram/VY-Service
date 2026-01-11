@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Repair = require('../models/Repair');
-const { sendWhatsAppToMultiple, generateRepairNotificationMessage } = require('../services/whatsappService');
 
 // POST /api/repairs - Create a new repair entry
 router.post('/', async (req, res) => {
@@ -53,42 +52,6 @@ router.post('/', async (req, res) => {
 
     const repair = new Repair(repairData);
     await repair.save();
-
-    // Send WhatsApp notification after successful save
-    try {
-      const message = generateRepairNotificationMessage(
-        repairData.type,
-        repairData.brand
-      );
-      
-      console.log('\n📱 Attempting to send WhatsApp notification...');
-      console.log('Phone numbers:', repairData.phoneNumber);
-      console.log('Message:', message);
-      
-      // Send to all phone numbers (comma-separated)
-      const whatsappResults = await sendWhatsAppToMultiple(repairData.phoneNumber, message);
-      
-      // Log results (optional - for debugging)
-      const successful = whatsappResults.filter(r => r.success).length;
-      const failed = whatsappResults.filter(r => !r.success).length;
-      console.log(`📊 WhatsApp results: ${successful} successful, ${failed} failed`);
-      
-      if (failed > 0) {
-        console.warn('❌ Failed WhatsApp numbers:');
-        whatsappResults.filter(r => !r.success).forEach(r => {
-          console.warn(`  - ${r.phoneNumber}: ${r.message}`);
-        });
-      }
-      
-      if (successful > 0) {
-        console.log('✅ WhatsApp messages sent successfully!');
-      }
-    } catch (whatsappError) {
-      // Don't fail the repair save if WhatsApp fails - just log it
-      console.error('❌ Error sending WhatsApp notification:', whatsappError);
-      console.error('Error details:', whatsappError.message);
-      console.error('Stack:', whatsappError.stack);
-    }
 
     res.status(201).json({
       success: true,
