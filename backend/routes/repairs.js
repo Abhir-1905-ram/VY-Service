@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Repair = require('../models/Repair');
+const { sendSMSToMultiple, generateRepairNotificationMessage } = require('../services/fast2smsService');
 
 // POST /api/repairs - Create a new repair entry
 router.post('/', async (req, res) => {
@@ -52,6 +53,55 @@ router.post('/', async (req, res) => {
 
     const repair = new Repair(repairData);
     await repair.save();
+
+    // Send SMS notification after successful save
+    try {
+      console.log('\n═══════════════════════════════════════════════════════');
+      console.log('📱 SMS NOTIFICATION PROCESS STARTED');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('📋 Repair Data:', JSON.stringify({
+        phoneNumber: repairData.phoneNumber,
+        type: repairData.type,
+        brand: repairData.brand
+      }, null, 2));
+      
+      const message = generateRepairNotificationMessage(
+        repairData.type,
+        repairData.brand
+      );
+      
+      console.log('💬 Generated Message:', message);
+      console.log('📞 Phone Number(s):', repairData.phoneNumber);
+      
+      const smsResults = await sendSMSToMultiple(repairData.phoneNumber, message);
+      
+      const successful = smsResults.filter(r => r.success).length;
+      const failed = smsResults.filter(r => !r.success).length;
+      
+      console.log('═══════════════════════════════════════════════════════');
+      console.log(`📊 SMS RESULTS: ${successful} successful, ${failed} failed`);
+      console.log('═══════════════════════════════════════════════════════');
+      
+      if (successful > 0) {
+        smsResults.filter(r => r.success).forEach(r => {
+          console.log(`  ✅ ${r.phoneNumber}: ${r.message}`);
+        });
+      }
+      
+      if (failed > 0) {
+        smsResults.filter(r => !r.success).forEach(r => {
+          console.error(`  ❌ ${r.phoneNumber}: ${r.message}`);
+          if (r.responseData) {
+            console.error(`     Response Data:`, JSON.stringify(r.responseData, null, 2));
+          }
+        });
+      }
+      console.log('═══════════════════════════════════════════════════════\n');
+    } catch (smsError) {
+      console.error('\n❌ EXCEPTION in SMS sending:', smsError);
+      console.error('Stack trace:', smsError.stack);
+      // Don't fail the request if SMS fails
+    }
 
     res.status(201).json({
       success: true,
