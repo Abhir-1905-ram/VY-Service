@@ -2,8 +2,12 @@ const axios = require('axios');
 require('dotenv').config();
 
 // Fast2SMS Configuration
-const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY || 'Jl4UqidSMpLTZ5QFbNXoxEesk0YfWHtPRw8Ozvuy2AIDhcVjCgGsRJHpi3tga4lcLv5PxnZqEVKX1bMU';
+const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY || '';
 const FAST2SMS_URL = 'https://www.fast2sms.com/dev/bulkV2';
+// Sender ID - Must be 6 alphabetical characters, approved through DLT platform
+// Example: "VYSRVI" for "Vyshnavi Computers"
+// Leave empty or set to null to use default sender (random number)
+const FAST2SMS_SENDER_ID = process.env.FAST2SMS_SENDER_ID || 'VYSRVI';
 
 /**
  * Format phone number for Fast2SMS (10 digits)
@@ -43,9 +47,9 @@ function generateRepairNotificationMessage(customerName, deviceType, deviceBrand
   return `Hello ${customerName},
 
 Your ${deviceBrand} ${deviceType} has been successfully registered for repair.
-Our team has started working on your device and will notify you once it's ready.
+Our team has started working on your device.
 
-Thank you for choosing our service! 🙏`;
+Thank you for choosing our service! `;
 }
 
 /**
@@ -83,6 +87,14 @@ async function sendSMS(phoneNumber, message) {
       flash: 0,
       numbers: formattedNumber
     };
+
+    // Add sender_id if configured (must be 6 characters, approved through DLT)
+    if (FAST2SMS_SENDER_ID && FAST2SMS_SENDER_ID.trim().length === 6) {
+      requestBody.sender_id = FAST2SMS_SENDER_ID.trim().toUpperCase();
+      console.log(`🏢 Using Sender ID: ${requestBody.sender_id}`);
+    } else if (FAST2SMS_SENDER_ID) {
+      console.warn(`⚠️  Sender ID "${FAST2SMS_SENDER_ID}" is not 6 characters. Sender ID must be exactly 6 alphabetical characters. Using default sender.`);
+    }
 
     console.log(`📤 Request Body:`, JSON.stringify(requestBody, null, 2));
 
