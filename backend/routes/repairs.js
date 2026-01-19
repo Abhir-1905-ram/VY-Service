@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Repair = require('../models/Repair');
-const { sendWhatsAppToMultiple, generateRepairNotificationMessage } = require('../services/whatsappService');
 
 // POST /api/repairs - Create a new repair entry
 router.post('/', async (req, res) => {
@@ -53,67 +52,6 @@ router.post('/', async (req, res) => {
 
     const repair = new Repair(repairData);
     await repair.save();
-
-    // Send WhatsApp notification after successful save
-    try {
-      console.log('\n═══════════════════════════════════════════════════════');
-      console.log('📱 WHATSAPP NOTIFICATION PROCESS STARTED');
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('📋 Repair Data:', JSON.stringify({
-        phoneNumber: repairData.phoneNumber,
-        customerName: repairData.customerName,
-        type: repairData.type,
-        brand: repairData.brand
-      }, null, 2));
-      
-      const message = generateRepairNotificationMessage(
-        repairData.customerName,
-        repairData.type,
-        repairData.brand
-      );
-      
-      console.log('💬 Generated Message:', message);
-      console.log('📞 Phone Number(s):', repairData.phoneNumber);
-      
-      const whatsappResults = await sendWhatsAppToMultiple(repairData.phoneNumber, message);
-      
-      const successful = whatsappResults.filter(r => r.success).length;
-      const failed = whatsappResults.filter(r => !r.success).length;
-      
-      console.log('═══════════════════════════════════════════════════════');
-      console.log(`📊 WHATSAPP RESULTS: ${successful} successful, ${failed} failed`);
-      console.log('═══════════════════════════════════════════════════════');
-      
-      if (successful > 0) {
-        whatsappResults.filter(r => r.success).forEach(r => {
-          console.log(`  ✅ ${r.phoneNumber}: ${r.message}`);
-          if (r.messageId) {
-            console.log(`     Message ID: ${r.messageId}`);
-          }
-        });
-      }
-      
-      if (failed > 0) {
-        whatsappResults.filter(r => !r.success).forEach(r => {
-          console.error(`  ❌ ${r.phoneNumber}: ${r.message}`);
-          
-          if (r.statusCode) {
-            console.error(`     Status Code: ${r.statusCode}`);
-          }
-          if (r.errorCode) {
-            console.error(`     Error Code: ${r.errorCode}`);
-          }
-          if (r.responseData) {
-            console.error(`     Response Data:`, JSON.stringify(r.responseData, null, 2));
-          }
-        });
-      }
-      console.log('═══════════════════════════════════════════════════════\n');
-    } catch (whatsappError) {
-      console.error('\n❌ EXCEPTION in WhatsApp sending:', whatsappError);
-      console.error('Stack trace:', whatsappError.stack);
-      // Don't fail the request if WhatsApp fails
-    }
 
     res.status(201).json({
       success: true,
