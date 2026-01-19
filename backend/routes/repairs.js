@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Repair = require('../models/Repair');
-const { sendSMSToMultiple, generateRepairNotificationMessage } = require('../services/fast2smsService');
+const { sendWhatsAppToMultiple, generateRepairNotificationMessage } = require('../services/whatsappService');
 
 // POST /api/repairs - Create a new repair entry
 router.post('/', async (req, res) => {
@@ -54,10 +54,10 @@ router.post('/', async (req, res) => {
     const repair = new Repair(repairData);
     await repair.save();
 
-    // Send SMS notification after successful save
+    // Send WhatsApp notification after successful save
     try {
       console.log('\n═══════════════════════════════════════════════════════');
-      console.log('📱 SMS NOTIFICATION PROCESS STARTED');
+      console.log('📱 WHATSAPP NOTIFICATION PROCESS STARTED');
       console.log('═══════════════════════════════════════════════════════');
       console.log('📋 Repair Data:', JSON.stringify({
         phoneNumber: repairData.phoneNumber,
@@ -75,41 +75,44 @@ router.post('/', async (req, res) => {
       console.log('💬 Generated Message:', message);
       console.log('📞 Phone Number(s):', repairData.phoneNumber);
       
-      const smsResults = await sendSMSToMultiple(repairData.phoneNumber, message);
+      const whatsappResults = await sendWhatsAppToMultiple(repairData.phoneNumber, message);
       
-      const successful = smsResults.filter(r => r.success).length;
-      const failed = smsResults.filter(r => !r.success).length;
+      const successful = whatsappResults.filter(r => r.success).length;
+      const failed = whatsappResults.filter(r => !r.success).length;
       
       console.log('═══════════════════════════════════════════════════════');
-      console.log(`📊 SMS RESULTS: ${successful} successful, ${failed} failed`);
+      console.log(`📊 WHATSAPP RESULTS: ${successful} successful, ${failed} failed`);
       console.log('═══════════════════════════════════════════════════════');
       
       if (successful > 0) {
-        smsResults.filter(r => r.success).forEach(r => {
+        whatsappResults.filter(r => r.success).forEach(r => {
           console.log(`  ✅ ${r.phoneNumber}: ${r.message}`);
+          if (r.messageId) {
+            console.log(`     Message ID: ${r.messageId}`);
+          }
         });
       }
       
       if (failed > 0) {
-        smsResults.filter(r => !r.success).forEach(r => {
+        whatsappResults.filter(r => !r.success).forEach(r => {
           console.error(`  ❌ ${r.phoneNumber}: ${r.message}`);
           
-          // Show special instructions for transaction requirement
-          if (r.requiresTransaction) {
-            console.error(`     ⚠️  ACTION REQUIRED: Complete a transaction of 100 INR or more in Fast2SMS`);
-            console.error(`     📱 Visit: https://www.fast2sms.com to add credits and activate API`);
+          if (r.statusCode) {
+            console.error(`     Status Code: ${r.statusCode}`);
           }
-          
+          if (r.errorCode) {
+            console.error(`     Error Code: ${r.errorCode}`);
+          }
           if (r.responseData) {
             console.error(`     Response Data:`, JSON.stringify(r.responseData, null, 2));
           }
         });
       }
       console.log('═══════════════════════════════════════════════════════\n');
-    } catch (smsError) {
-      console.error('\n❌ EXCEPTION in SMS sending:', smsError);
-      console.error('Stack trace:', smsError.stack);
-      // Don't fail the request if SMS fails
+    } catch (whatsappError) {
+      console.error('\n❌ EXCEPTION in WhatsApp sending:', whatsappError);
+      console.error('Stack trace:', whatsappError.stack);
+      // Don't fail the request if WhatsApp fails
     }
 
     res.status(201).json({
