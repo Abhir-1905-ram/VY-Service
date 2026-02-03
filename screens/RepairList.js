@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import AppCard from '../components/AppCard';
 import StatusBadge from '../components/StatusBadge';
 import AppButton from '../components/AppButton';
@@ -50,6 +51,13 @@ export default function RepairList({ navigation, isAdmin = false }) {
   useEffect(() => {
     loadRepairs();
   }, []);
+
+  // Refresh when screen comes into focus (after returning from edit screen)
+  useFocusEffect(
+    React.useCallback(() => {
+      loadRepairs();
+    }, [])
+  );
 
   const loadRepairs = async () => {
     try {

@@ -154,11 +154,39 @@ router.get('/search/:uniqueId', async (req, res) => {
   }
 });
 
-// PUT /api/repairs/:id - Update repair entry (delivery status)
+// PUT /api/repairs/:id - Update repair entry
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = {};
+
+    // Handle basic repair fields from edit screen
+    if (req.body.customerName !== undefined) {
+      updateData.customerName = req.body.customerName.trim();
+    }
+    if (req.body.phoneNumber !== undefined) {
+      updateData.phoneNumber = req.body.phoneNumber;
+    }
+    if (req.body.type !== undefined) {
+      updateData.type = req.body.type.trim();
+    }
+    if (req.body.brand !== undefined) {
+      updateData.brand = req.body.brand.trim();
+    }
+    if (req.body.problem !== undefined) {
+      updateData.problem = req.body.problem.trim();
+    }
+    if (req.body.adapterGiven !== undefined) {
+      updateData.adapterGiven = req.body.adapterGiven;
+    }
+    if (req.body.expectedAmount !== undefined) {
+      if (req.body.expectedAmount === null || req.body.expectedAmount === '' || req.body.expectedAmount === 0) {
+        updateData.expectedAmount = null;
+      } else {
+        const expectedAmountValue = parseFloat(req.body.expectedAmount);
+        updateData.expectedAmount = isNaN(expectedAmountValue) ? null : expectedAmountValue;
+      }
+    }
 
     // Handle deliveredAt: explicitly set to null if provided as null, or set to date if provided
     if (req.body.deliveredAt !== undefined) {
