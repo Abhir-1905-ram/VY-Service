@@ -82,7 +82,6 @@ app.get('/', (req, res) => {
         employees: '/api/employees',
         repairs: '/api/repairs',
         attendance: '/api/attendance',
-        whatsapp: '/api/whatsapp'
       }
   });
 });
@@ -100,8 +99,6 @@ app.use('/api/employees', employeesRouter);
 const attendanceRouter = require('./routes/attendance');
 app.use('/api/attendance', attendanceRouter);
 
-const whatsappRouter = require('./routes/whatsapp');
-app.use('/api/whatsapp', whatsappRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
