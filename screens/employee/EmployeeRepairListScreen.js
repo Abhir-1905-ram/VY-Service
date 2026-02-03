@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, Text, View, StyleSheet, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import RepairList from '../RepairList';
 import { AuthContext } from '../../contexts/AuthContext';
 import { getRepairs, getEmployeeCards } from '../../services/api';
@@ -77,6 +78,16 @@ export default function EmployeeRepairListScreen({ navigation }) {
     }
   }, [hasPermission]);
 
+  // Refresh when screen comes into focus (after returning from edit screen)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (hasPermission) {
+        console.log('🔄 EmployeeRepairListScreen focused - refreshing data...');
+        load();
+      }
+    }, [hasPermission])
+  );
+
   const myRepairs = useMemo(() => repairs.filter(r => r.createdBy === user?.username), [repairs, user]);
 
   if (checkingPermission) {
@@ -119,7 +130,7 @@ export default function EmployeeRepairListScreen({ navigation }) {
     );
   }
 
-  return <RepairList navigation={navigation} />;
+  return <RepairList navigation={navigation} isAdmin={false} />;
 }
 
 const styles = StyleSheet.create({

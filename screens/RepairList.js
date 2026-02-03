@@ -38,6 +38,7 @@ export default function RepairList({ navigation, isAdmin = false }) {
   const [searchId, setSearchId] = useState('');
   const [remarkModalVisible, setRemarkModalVisible] = useState(false);
   const [remarkText, setRemarkText] = useState('');
+  const [remarkAmount, setRemarkAmount] = useState(''); // Amount for completed/not completed
   const [remarkTarget, setRemarkTarget] = useState(null); // repair object
   const [remarkStatus, setRemarkStatus] = useState(null); // 'Completed' | 'Not Completed'
   const [amountModalVisible, setAmountModalVisible] = useState(false);
@@ -55,9 +56,23 @@ export default function RepairList({ navigation, isAdmin = false }) {
   // Refresh when screen comes into focus (after returning from edit screen)
   useFocusEffect(
     React.useCallback(() => {
-      loadRepairs();
+      console.log('🔄 RepairList screen focused - refreshing data...');
+      // Add a small delay to ensure navigation is complete
+      const timer = setTimeout(() => {
+        loadRepairs();
+      }, 100);
+      return () => clearTimeout(timer);
     }, [])
   );
+
+  // Also listen for navigation focus events as a backup
+  useEffect(() => {
+    const unsubscribe = navigation?.addListener?.('focus', () => {
+      console.log('🔄 Navigation focus event - refreshing data...');
+      loadRepairs();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const loadRepairs = async () => {
     try {
@@ -99,6 +114,9 @@ export default function RepairList({ navigation, isAdmin = false }) {
     setRemarkTarget(repair);
     setRemarkStatus(status);
     setRemarkText('');
+    // Pre-fill amount with existing expectedAmount if available
+    const prefillAmount = repair?.expectedAmount ? String(repair.expectedAmount) : '';
+    setRemarkAmount(prefillAmount);
     setRemarkModalVisible(true);
   };
 
@@ -112,14 +130,33 @@ export default function RepairList({ navigation, isAdmin = false }) {
       Alert.alert('Description required', 'Please enter a description.');
       return;
     }
+    
+    // Parse amount (optional) - this will update expectedAmount
+    let expectedAmountValue = null;
+    const trimmedAmount = String(remarkAmount || '').trim();
+    if (trimmedAmount) {
+      const parsed = parseFloat(trimmedAmount);
+      if (!isNaN(parsed) && parsed > 0) {
+        expectedAmountValue = parsed;
+      }
+    }
+    
     try {
-      const response = await updateRepair(remarkTarget._id, {
+      const updateData = {
         status: remarkStatus,
         remark: trimmed,
-      });
+      };
+      
+      // Update expectedAmount if provided
+      if (expectedAmountValue !== null) {
+        updateData.expectedAmount = expectedAmountValue;
+      }
+      
+      const response = await updateRepair(remarkTarget._id, updateData);
       if (response.success) {
         setRemarkModalVisible(false);
         setRemarkText('');
+        setRemarkAmount('');
         setRemarkTarget(null);
         setRemarkStatus(null);
         loadRepairs();
@@ -439,6 +476,14 @@ export default function RepairList({ navigation, isAdmin = false }) {
                 {item.problem}
               </Text>
             </View>
+            {item.expectedAmount && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Expected Amount: </Text>
+                  <Text style={styles.expectedAmountDetailText}>₹{item.expectedAmount.toFixed(2)}</Text>
+                </Text>
+              </View>
+            )}
             {!!item.remark && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailText}>
@@ -684,8 +729,25 @@ export default function RepairList({ navigation, isAdmin = false }) {
               placeholderTextColor="#95A5A6"
               multiline
             />
+            <Text style={styles.modalSubtitle}>Amount (Optional)</Text>
+            <TextInput
+              style={[styles.modalInput, { marginTop: 8, minHeight: 50, textAlignVertical: 'center' }]}
+              value={remarkAmount}
+              onChangeText={(value) => {
+                // Allow only numbers and decimal point
+                const numericValue = value.replace(/[^0-9.]/g, '');
+                setRemarkAmount(numericValue);
+              }}
+              placeholder="Enter amount (e.g., 500)"
+              placeholderTextColor="#95A5A6"
+              keyboardType="numeric"
+            />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 }}>
-              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#9E9E9E' }]} onPress={() => setRemarkModalVisible(false)}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#9E9E9E' }]} onPress={() => {
+                setRemarkModalVisible(false);
+                setRemarkText('');
+                setRemarkAmount('');
+              }}>
                 <Text style={styles.modalBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.modalBtn, { backgroundColor: colors.secondary, marginLeft: 8 }]} onPress={saveRemarkAndUpdate}>

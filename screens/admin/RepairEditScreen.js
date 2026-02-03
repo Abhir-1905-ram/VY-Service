@@ -196,11 +196,19 @@ export default function RepairEditScreen({ route, navigation }) {
       
       console.log('📥 Update response:', JSON.stringify(res, null, 2));
       
-      if (res.success) {
+      if (res.success && res.data) {
+        console.log('✅ Update successful, updated data:', JSON.stringify(res.data, null, 2));
         Alert.alert('Saved', 'Repair updated successfully', [
-          { text: 'OK', onPress: () => navigation.goBack() }
+          { 
+            text: 'OK', 
+            onPress: () => {
+              // Navigate back - useFocusEffect will refresh the list
+              navigation.goBack();
+            }
+          }
         ]);
       } else {
+        console.error('❌ Update failed:', res.message);
         Alert.alert('Error', res.message || 'Failed to update repair');
       }
     } catch (e) {
