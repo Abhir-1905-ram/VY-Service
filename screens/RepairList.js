@@ -465,7 +465,13 @@ export default function RepairList({ navigation, isAdmin = false }) {
             <View style={{ marginTop: 8, flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: '#455A64' }]}
-                onPress={() => navigation && navigation.navigate && navigation.navigate('AdminRepairEdit', { repair: item })}
+                onPress={() => {
+                  if (navigation && navigation.navigate) {
+                    // Use the correct screen name based on user role
+                    const screenName = isAdmin ? 'AdminRepairEdit' : 'EmployeeRepairEdit';
+                    navigation.navigate(screenName, { repair: item });
+                  }
+                }}
               >
                 <Text style={styles.deliveredButtonText}>Edit</Text>
               </TouchableOpacity>
