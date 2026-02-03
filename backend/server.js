@@ -76,13 +76,14 @@ app.get('/', (req, res) => {
     message: 'VY Service Backend API',
     status: 'running',
     version: '1.0.0',
-    endpoints: {
-      health: '/api/health',
-      auth: '/api/auth',
-      employees: '/api/employees',
-      repairs: '/api/repairs',
-      attendance: '/api/attendance'
-    }
+      endpoints: {
+        health: '/api/health',
+        auth: '/api/auth',
+        employees: '/api/employees',
+        repairs: '/api/repairs',
+        attendance: '/api/attendance',
+        whatsapp: '/api/whatsapp'
+      }
   });
 });
 
@@ -98,6 +99,9 @@ app.use('/api/employees', employeesRouter);
 
 const attendanceRouter = require('./routes/attendance');
 app.use('/api/attendance', attendanceRouter);
+
+const whatsappRouter = require('./routes/whatsapp');
+app.use('/api/whatsapp', whatsappRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

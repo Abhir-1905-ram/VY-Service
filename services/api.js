@@ -490,3 +490,23 @@ export const getTodayPresentCount = async () => {
   }
 };
 
+// ---------- WhatsApp ----------
+export const sendWhatsAppMessage = async (phoneNumber, message) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/whatsapp/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ phoneNumber, message }),
+    });    const data = await response.json();
+    
+    if (response.ok) {
+      return { success: true, data };
+    } else {
+      return { success: false, message: data.message || 'Failed to send WhatsApp message' };
+    }
+  } catch (error) {
+    return { success: false, message: error.message || 'Network error' };
+  }
+};
