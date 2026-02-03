@@ -179,7 +179,7 @@ export default function RepairEditScreen({ route, navigation }) {
     setSaving(true);
     try {
       const phoneNumberString = validPhoneNumbers.join(',');
-      const res = await updateRepair(repair._id, {
+      const updatePayload = {
         customerName: form.customerName.trim(),
         phoneNumber: phoneNumberString,
         type: form.type.trim(),
@@ -187,14 +187,24 @@ export default function RepairEditScreen({ route, navigation }) {
         problem: form.problem.trim(),
         adapterGiven: form.adapterGiven,
         expectedAmount: expectedAmountValue,
-      });
+      };
+      
+      console.log('📤 Sending update request for repair:', repair._id);
+      console.log('📤 Update payload:', JSON.stringify(updatePayload, null, 2));
+      
+      const res = await updateRepair(repair._id, updatePayload);
+      
+      console.log('📥 Update response:', JSON.stringify(res, null, 2));
+      
       if (res.success) {
-        Alert.alert('Saved', 'Repair updated successfully');
-        navigation.goBack();
+        Alert.alert('Saved', 'Repair updated successfully', [
+          { text: 'OK', onPress: () => navigation.goBack() }
+        ]);
       } else {
         Alert.alert('Error', res.message || 'Failed to update repair');
       }
     } catch (e) {
+      console.error('❌ Update error:', e);
       Alert.alert('Error', e.message || 'Failed to update repair');
     } finally {
       setSaving(false);

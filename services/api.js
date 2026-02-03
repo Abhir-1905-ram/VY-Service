@@ -157,6 +157,8 @@ export const getRepairById = async (uniqueId) => {
 
 export const updateRepair = async (id, updateData) => {
   try {
+    console.log('📤 API: Updating repair', id, 'with data:', JSON.stringify(updateData, null, 2));
+    
     const response = await fetch(`${API_BASE_URL}/repairs/${id}`, {
       method: 'PUT',
       headers: {
@@ -167,12 +169,17 @@ export const updateRepair = async (id, updateData) => {
 
     const data = await response.json();
     
+    console.log('📥 API: Update response status:', response.status);
+    console.log('📥 API: Update response data:', JSON.stringify(data, null, 2));
+    
     if (response.ok) {
-      return { success: true, data };
+      // Backend returns { success: true, data: repair }
+      return { success: true, data: data.data || data };
     } else {
       return { success: false, message: data.message || 'Failed to update repair' };
     }
   } catch (error) {
+    console.error('❌ API: Update error:', error);
     return { success: false, message: error.message || 'Network error' };
   }
 };

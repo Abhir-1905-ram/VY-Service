@@ -212,11 +212,69 @@ router.put('/:id', async (req, res) => {
       }
     }
 
+    // Log the update data for debugging
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('📝 UPDATE REPAIR REQUEST');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('🔑 Repair ID:', id);
+    console.log('📤 Request Body:', JSON.stringify(req.body, null, 2));
+    console.log('📋 Update Data Object:', JSON.stringify(updateData, null, 2));
+    console.log('📊 Update Data Keys:', Object.keys(updateData));
+    console.log('═══════════════════════════════════════════════════════\n');
+
+    // Check if updateData is empty
+    if (Object.keys(updateData).length === 0) {
+      console.error('❌ No fields to update!');
+      return res.status(400).json({
+        success: false,
+        message: 'No fields to update',
+      });
+    }
+
+    // Find the repair first to verify it exists
+    const existingRepair = await Repair.findById(id);
+    if (!existingRepair) {
+      console.error('❌ Repair not found:', id);
+      return res.status(404).json({
+        success: false,
+        message: 'Repair entry not found',
+      });
+    }
+
+    console.log('📋 Existing repair before update:', JSON.stringify({
+      customerName: existingRepair.customerName,
+      phoneNumber: existingRepair.phoneNumber,
+      type: existingRepair.type,
+      brand: existingRepair.brand,
+      problem: existingRepair.problem,
+      adapterGiven: existingRepair.adapterGiven,
+      expectedAmount: existingRepair.expectedAmount,
+    }, null, 2));
+
     const repair = await Repair.findByIdAndUpdate(
       id,
       updateData,
       { new: true, runValidators: true }
     );
+
+    if (!repair) {
+      console.error('❌ Failed to update repair');
+      return res.status(404).json({
+        success: false,
+        message: 'Repair entry not found',
+      });
+    }
+
+    console.log('✅ Updated repair after update:', JSON.stringify({
+      customerName: repair.customerName,
+      phoneNumber: repair.phoneNumber,
+      type: repair.type,
+      brand: repair.brand,
+      problem: repair.problem,
+      adapterGiven: repair.adapterGiven,
+      expectedAmount: repair.expectedAmount,
+    }, null, 2));
+    console.log('═══════════════════════════════════════════════════════\n');
 
     if (!repair) {
       return res.status(404).json({
