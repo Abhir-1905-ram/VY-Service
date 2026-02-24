@@ -27,6 +27,22 @@ export const getCurrentDateTime = () => {
   return { date, time, fullDateTime: `${date} ${time}` };
 };
 
+// Parse dd/mm/yy to Date (start of day, local time)
+export const parseDate = (dateString) => {
+  if (!dateString || typeof dateString !== 'string') return null;
+  const trimmed = dateString.trim();
+  const parts = trimmed.split('/');
+  if (parts.length !== 3) return null;
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const yy = parseInt(parts[2], 10);
+  const year = yy < 100 ? 2000 + yy : yy;
+  if (isNaN(day) || isNaN(month) || isNaN(year) || month < 0 || month > 11) return null;
+  const d = new Date(year, month, day);
+  if (d.getDate() !== day || d.getMonth() !== month) return null;
+  return d;
+};
+
 // Parse dd/mm/yy HH:MM AM/PM back to Date object
 export const parseDateTime = (dateTimeString) => {
   // Format: "dd/mm/yy HH:MM AM/PM"

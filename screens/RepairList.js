@@ -22,6 +22,7 @@ import AppButton from '../components/AppButton';
 import AppHeader from '../components/AppHeader';
 import { getRepairs, updateRepair, deleteRepair } from '../services/api';
 import { colors, spacing, radii } from '../utils/theme';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { formatDate, formatTime, getCurrentDateTime, parseDateTime } from '../utils/dateTime';
 import { AuthContext } from '../contexts/AuthContext';
 
@@ -43,6 +44,8 @@ export default function RepairList({ navigation, isAdmin = false }) {
   const [remarkStatus, setRemarkStatus] = useState(null); // 'Completed' | 'Not Completed'
   const [amountModalVisible, setAmountModalVisible] = useState(false);
   const [amountText, setAmountText] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState(() => new Date()); // calendar-selected date
+  const [showDeliveryDatePicker, setShowDeliveryDatePicker] = useState(false);
   const [amountTarget, setAmountTarget] = useState(null); // repair object
   const [savingDelivered, setSavingDelivered] = useState(false);
   const [phoneModalVisible, setPhoneModalVisible] = useState(false);
@@ -220,11 +223,12 @@ export default function RepairList({ navigation, isAdmin = false }) {
   };
 
   const handleMarkAsDelivered = async (repair) => {
-    // Open amount modal first (amount is optional)
-    // Pre-fill with expectedAmount if available
+    // Open modal; pre-fill delivery date (today) and amount
     const prefillAmount = repair.expectedAmount ? String(repair.expectedAmount) : '';
     setAmountTarget(repair);
     setAmountText(prefillAmount);
+    setDeliveryDate(new Date());
+    setShowDeliveryDatePicker(false);
     setAmountModalVisible(true);
   };
 
@@ -241,8 +245,9 @@ export default function RepairList({ navigation, isAdmin = false }) {
     setSavingDelivered(true);
 
     try {
-      // Use current date/time directly instead of parsing
-      const deliveredAt = new Date();
+      // Use calendar-selected delivery date (date only). Noon UTC so date displays correctly in any timezone.
+      const d = deliveryDate || new Date();
+      const deliveredAt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0, 0));
 
       // Parse amount: if empty or invalid, set to null (optional)
       let amountValue = null;
@@ -265,6 +270,7 @@ export default function RepairList({ navigation, isAdmin = false }) {
       // Close modal first to prevent UI blocking
       setAmountModalVisible(false);
       setAmountText('');
+      setShowDeliveryDatePicker(false);
       const targetRepair = amountTarget;
       setAmountTarget(null);
       setSavingDelivered(false);
@@ -279,6 +285,7 @@ export default function RepairList({ navigation, isAdmin = false }) {
       console.error('Error marking as delivered:', error);
       setAmountModalVisible(false);
       setAmountText('');
+      setShowDeliveryDatePicker(false);
       setAmountTarget(null);
       setSavingDelivered(false);
       Alert.alert('Error', error.message || 'Failed to update repair. Please try again.');
@@ -411,8 +418,7 @@ export default function RepairList({ navigation, isAdmin = false }) {
     const createdDate = item.createdAt ? formatDate(item.createdAt) : 'N/A';
     const createdTime = item.createdAt ? formatTime(item.createdAt) : 'N/A';
     const deliveredDate = item.deliveredAt ? formatDate(item.deliveredAt) : null;
-    const deliveredTime = item.deliveredAt ? formatTime(item.deliveredAt) : null;
-    
+
     const isDelivered = !!item.deliveredAt;
     const badgeStyle = isDelivered
       ? (item.status === 'Not Completed' ? styles.statusNotCompleted : styles.statusDelivered)
@@ -502,7 +508,7 @@ export default function RepairList({ navigation, isAdmin = false }) {
               <View style={styles.detailRow}>
                 <Text style={styles.detailText}>
                   <Text style={styles.detailLabel}>Delivered Date: </Text>
-                  {deliveredDate} {deliveredTime}
+                  {deliveredDate}
                 </Text>
               </View>
             )}
@@ -767,6 +773,7 @@ export default function RepairList({ navigation, isAdmin = false }) {
           if (!savingDelivered) {
             setAmountModalVisible(false);
             setAmountText('');
+            setShowDeliveryDatePicker(false);
             setAmountTarget(null);
             setSavingDelivered(false);
           }
@@ -775,7 +782,36 @@ export default function RepairList({ navigation, isAdmin = false }) {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Mark as Delivered</Text>
-            <Text style={styles.modalSubtitle}>Enter amount (optional)</Text>
+            <Text style={styles.modalSubtitle}>Delivery date</Text>
+            <TouchableOpacity
+              style={[styles.modalInput, { minHeight: 44, justifyContent: 'center', marginBottom: 8 }]}
+              onPress={() => setShowDeliveryDatePicker(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: '#333', fontSize: 16 }}>{formatDate(deliveryDate)}</Text>
+            </TouchableOpacity>
+            {showDeliveryDatePicker && (
+              <>
+                <DateTimePicker
+                  value={deliveryDate || new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                  onChange={(e, selectedDate) => {
+                    if (Platform.OS === 'android') setShowDeliveryDatePicker(false);
+                    if (selectedDate) setDeliveryDate(selectedDate);
+                  }}
+                />
+                {Platform.OS === 'ios' && (
+                  <TouchableOpacity
+                    style={[styles.modalBtn, { alignSelf: 'flex-end', marginBottom: 12 }]}
+                    onPress={() => setShowDeliveryDatePicker(false)}
+                  >
+                    <Text style={styles.modalBtnText}>Done</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+            <Text style={styles.modalSubtitle}>Amount (optional)</Text>
             <TextInput
               style={[styles.modalInput, { minHeight: 50, textAlignVertical: 'center' }]}
               value={amountText}
@@ -791,6 +827,7 @@ export default function RepairList({ navigation, isAdmin = false }) {
                   if (!savingDelivered) {
                     setAmountModalVisible(false);
                     setAmountText('');
+                    setShowDeliveryDatePicker(false);
                     setAmountTarget(null);
                     setSavingDelivered(false);
                   }
