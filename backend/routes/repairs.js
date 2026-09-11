@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const Repair = require('../models/Repair');
+const supabase = require('../lib/supabase');
+const { mapRepair } = require('../lib/dbHelpers');
 
-// POST /api/repairs - Create a new repair entry
+// POST /api/repairs
 router.post('/', async (req, res) => {
   try {
-    // Parse expectedAmount (optional)
     let expectedAmountValue = null;
     if (req.body.expectedAmount !== undefined && req.body.expectedAmount !== null && req.body.expectedAmount !== '') {
       const parsed = parseFloat(req.body.expectedAmount);
@@ -15,61 +15,44 @@ router.post('/', async (req, res) => {
     }
 
     const repairData = {
-      uniqueId: req.body.uniqueId,
-      customerName: req.body.customerName,
-      phoneNumber: req.body.phoneNumber,
+      unique_id: req.body.uniqueId,
+      customer_name: req.body.customerName,
+      phone_number: req.body.phoneNumber,
       type: req.body.type,
       brand: req.body.brand || '',
-      adapterGiven: req.body.adapterGiven,
+      adapter_given: req.body.adapterGiven,
       problem: req.body.problem,
-      createdAt: req.body.createdAt ? new Date(req.body.createdAt) : new Date(),
+      created_at: req.body.createdAt ? new Date(req.body.createdAt).toISOString() : new Date().toISOString(),
       status: req.body.status || 'Pending',
-      createdBy: req.body.createdBy || '',
-      expectedAmount: expectedAmountValue, // Optional expected amount
+      created_by: req.body.createdBy || '',
+      expected_amount: expectedAmountValue,
     };
 
-    // Validate required fields
-    if (!repairData.uniqueId || !repairData.customerName || !repairData.phoneNumber || !repairData.type || !repairData.problem) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields',
-      });
+    if (!repairData.unique_id || !repairData.customer_name || !repairData.phone_number || !repairData.type || !repairData.problem) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
-
-    // Validate brand and adapterGiven for all device types
     if (!repairData.brand) {
-      return res.status(400).json({
-        success: false,
-        message: 'Brand name is required',
-      });
+      return res.status(400).json({ success: false, message: 'Brand name is required' });
     }
-    if (repairData.adapterGiven === undefined) {
-      return res.status(400).json({
-        success: false,
-        message: 'Adapter status is required',
-      });
+    if (repairData.adapter_given === undefined) {
+      return res.status(400).json({ success: false, message: 'Adapter status is required' });
     }
 
-    const repair = new Repair(repairData);
-    await repair.save();
+    const { data: repair, error } = await supabase
+      .from('repairs')
+      .insert(repairData)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     res.status(201).json({
       success: true,
       message: 'Repair entry created successfully',
-      data: repair,
+      data: mapRepair(repair),
     });
   } catch (error) {
     console.error('Error creating repair entry:', error);
-    
-    // Check for duplicate key error (MongoDB unique index)
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: 'A repair entry with this ID already exists. Please run the script to remove the unique index: node backend/dropUniqueIndex.js',
-        error: 'Duplicate uniqueId - unique index still exists in MongoDB',
-      });
-    }
-    
     res.status(500).json({
       success: false,
       message: 'Failed to create repair entry',
@@ -78,39 +61,22 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/repairs - Get all repair entries
+// GET /api/repairs
 router.get('/', async (req, res) => {
   try {
-    // Check if MongoDB is connected
-    const mongoose = require('mongoose');
-    if (mongoose.connection.readyState !== 1) {
-      console.error('MongoDB not connected. State:', mongoose.connection.readyState);
-      return res.status(503).json({
-        success: false,
-        message: 'Database connection not ready. Please wait and try again.',
-        error: 'MongoDB connection pending',
-      });
-    }
+    const { data: repairs, error } = await supabase
+      .from('repairs')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    console.log('GET /api/repairs - Fetching all repairs');
-    const repairs = await Repair.find().sort({ createdAt: -1 }).maxTimeMS(30000);
-    console.log(`Found ${repairs.length} repairs`);
+    if (error) throw error;
+
     res.json({
       success: true,
-      data: repairs,
+      data: (repairs || []).map(mapRepair),
     });
   } catch (error) {
     console.error('Error fetching repairs:', error);
-    
-    // Check if it's a connection error
-    if (error.name === 'MongooseError' && error.message.includes('buffering')) {
-      return res.status(503).json({
-        success: false,
-        message: 'Database connection not ready. Please check MongoDB Atlas Network Access settings.',
-        error: 'MongoDB connection timeout',
-      });
-    }
-    
     res.status(500).json({
       success: false,
       message: 'Failed to fetch repairs',
@@ -119,30 +85,31 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/repairs/search/:uniqueId - Get all repairs by unique ID (customer history)
+// GET /api/repairs/search/:uniqueId
 router.get('/search/:uniqueId', async (req, res) => {
   try {
     const { uniqueId } = req.params;
-    console.log('Searching for repairs with uniqueId:', uniqueId);
-    
-    // Get the most recent repair for customer details
-    const latestRepair = await Repair.findOne({ uniqueId: uniqueId }).sort({ createdAt: -1 });
-    
-    // Get all repairs for this customer/device (history)
-    const allRepairs = await Repair.find({ uniqueId: uniqueId }).sort({ createdAt: -1 });
-    
-    if (!latestRepair) {
+    const { data: allRepairs, error } = await supabase
+      .from('repairs')
+      .select('*')
+      .eq('unique_id', uniqueId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!allRepairs || allRepairs.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Repair entry not found with this ID',
       });
     }
 
+    const mapped = allRepairs.map(mapRepair);
     res.json({
       success: true,
-      data: latestRepair, // Return latest for form auto-fill
-      history: allRepairs, // Return all previous problems
-      totalEntries: allRepairs.length,
+      data: mapped[0],
+      history: mapped,
+      totalEntries: mapped.length,
     });
   } catch (error) {
     console.error('Error searching repair:', error);
@@ -154,139 +121,62 @@ router.get('/search/:uniqueId', async (req, res) => {
   }
 });
 
-// PUT /api/repairs/:id - Update repair entry
+// PUT /api/repairs/:id
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = {};
 
-    // Handle basic repair fields from edit screen
-    if (req.body.customerName !== undefined) {
-      updateData.customerName = req.body.customerName.trim();
-    }
-    if (req.body.phoneNumber !== undefined) {
-      updateData.phoneNumber = req.body.phoneNumber;
-    }
-    if (req.body.type !== undefined) {
-      updateData.type = req.body.type.trim();
-    }
-    if (req.body.brand !== undefined) {
-      updateData.brand = req.body.brand.trim();
-    }
-    if (req.body.problem !== undefined) {
-      updateData.problem = req.body.problem.trim();
-    }
-    if (req.body.adapterGiven !== undefined) {
-      updateData.adapterGiven = req.body.adapterGiven;
-    }
+    if (req.body.customerName !== undefined) updateData.customer_name = req.body.customerName.trim();
+    if (req.body.phoneNumber !== undefined) updateData.phone_number = req.body.phoneNumber;
+    if (req.body.type !== undefined) updateData.type = req.body.type.trim();
+    if (req.body.brand !== undefined) updateData.brand = req.body.brand.trim();
+    if (req.body.problem !== undefined) updateData.problem = req.body.problem.trim();
+    if (req.body.adapterGiven !== undefined) updateData.adapter_given = req.body.adapterGiven;
     if (req.body.expectedAmount !== undefined) {
       if (req.body.expectedAmount === null || req.body.expectedAmount === '' || req.body.expectedAmount === 0) {
-        updateData.expectedAmount = null;
+        updateData.expected_amount = null;
       } else {
-        const expectedAmountValue = parseFloat(req.body.expectedAmount);
-        updateData.expectedAmount = isNaN(expectedAmountValue) ? null : expectedAmountValue;
+        const val = parseFloat(req.body.expectedAmount);
+        updateData.expected_amount = isNaN(val) ? null : val;
       }
     }
-
-    // Handle deliveredAt: explicitly set to null if provided as null, or set to date if provided
     if (req.body.deliveredAt !== undefined) {
-      if (req.body.deliveredAt === null || req.body.deliveredAt === '') {
-        updateData.deliveredAt = null;
-      } else {
-        updateData.deliveredAt = new Date(req.body.deliveredAt);
-      }
+      updateData.delivered_at = (req.body.deliveredAt === null || req.body.deliveredAt === '')
+        ? null
+        : new Date(req.body.deliveredAt).toISOString();
     }
-    if (req.body.status) {
-      updateData.status = req.body.status;
-    }
-    if (req.body.remark !== undefined) {
-      updateData.remark = req.body.remark;
-    }
-    // Handle amount: optional field for delivered items
+    if (req.body.status) updateData.status = req.body.status;
+    if (req.body.remark !== undefined) updateData.remark = req.body.remark;
     if (req.body.amount !== undefined) {
       if (req.body.amount === null || req.body.amount === '' || req.body.amount === 0) {
         updateData.amount = null;
       } else {
-        const amountValue = parseFloat(req.body.amount);
-        updateData.amount = isNaN(amountValue) ? null : amountValue;
+        const val = parseFloat(req.body.amount);
+        updateData.amount = isNaN(val) ? null : val;
       }
     }
 
-    // Log the update data for debugging
-    console.log('\n═══════════════════════════════════════════════════════');
-    console.log('📝 UPDATE REPAIR REQUEST');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🔑 Repair ID:', id);
-    console.log('📤 Request Body:', JSON.stringify(req.body, null, 2));
-    console.log('📋 Update Data Object:', JSON.stringify(updateData, null, 2));
-    console.log('📊 Update Data Keys:', Object.keys(updateData));
-    console.log('═══════════════════════════════════════════════════════\n');
-
-    // Check if updateData is empty
     if (Object.keys(updateData).length === 0) {
-      console.error('❌ No fields to update!');
-      return res.status(400).json({
-        success: false,
-        message: 'No fields to update',
-      });
+      return res.status(400).json({ success: false, message: 'No fields to update' });
     }
 
-    // Find the repair first to verify it exists
-    const existingRepair = await Repair.findById(id);
-    if (!existingRepair) {
-      console.error('❌ Repair not found:', id);
-      return res.status(404).json({
-        success: false,
-        message: 'Repair entry not found',
-      });
-    }
+    const { data: repair, error } = await supabase
+      .from('repairs')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
 
-    console.log('📋 Existing repair before update:', JSON.stringify({
-      customerName: existingRepair.customerName,
-      phoneNumber: existingRepair.phoneNumber,
-      type: existingRepair.type,
-      brand: existingRepair.brand,
-      problem: existingRepair.problem,
-      adapterGiven: existingRepair.adapterGiven,
-      expectedAmount: existingRepair.expectedAmount,
-    }, null, 2));
-
-    const repair = await Repair.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    );
-
+    if (error) throw error;
     if (!repair) {
-      console.error('❌ Failed to update repair');
-      return res.status(404).json({
-        success: false,
-        message: 'Repair entry not found',
-      });
-    }
-
-    console.log('✅ Updated repair after update:', JSON.stringify({
-      customerName: repair.customerName,
-      phoneNumber: repair.phoneNumber,
-      type: repair.type,
-      brand: repair.brand,
-      problem: repair.problem,
-      adapterGiven: repair.adapterGiven,
-      expectedAmount: repair.expectedAmount,
-    }, null, 2));
-    console.log('═══════════════════════════════════════════════════════\n');
-
-    if (!repair) {
-      return res.status(404).json({
-        success: false,
-        message: 'Repair entry not found',
-      });
+      return res.status(404).json({ success: false, message: 'Repair entry not found' });
     }
 
     res.json({
       success: true,
       message: 'Repair entry updated successfully',
-      data: repair,
+      data: mapRepair(repair),
     });
   } catch (error) {
     res.status(500).json({
@@ -297,36 +187,27 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/repairs/:id - Delete a repair entry
+// DELETE /api/repairs/:id
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Only allow deletion of pending repairs
-    const repair = await Repair.findById(id);
-    if (!repair) {
-      return res.status(404).json({
-        success: false,
-        message: 'Repair entry not found',
-      });
-    }
+    const { data: repair, error: fetchError } = await supabase
+      .from('repairs')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    // Check if repair is pending
+    if (fetchError || !repair) {
+      return res.status(404).json({ success: false, message: 'Repair entry not found' });
+    }
     if (repair.status !== 'Pending') {
-      return res.status(400).json({
-        success: false,
-        message: 'Only pending repairs can be removed',
-      });
+      return res.status(400).json({ success: false, message: 'Only pending repairs can be removed' });
     }
 
-    // Delete the repair
-    await Repair.findByIdAndDelete(id);
+    const { error } = await supabase.from('repairs').delete().eq('id', id);
+    if (error) throw error;
 
-    res.json({
-      success: true,
-      message: 'Repair entry removed successfully',
-      data: { id },
-    });
+    res.json({ success: true, message: 'Repair entry removed successfully', data: { id } });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -336,36 +217,27 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Fallback POST route for environments where DELETE might be blocked
+// POST /api/repairs/:id/delete
 router.post('/:id/delete', async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Only allow deletion of pending repairs
-    const repair = await Repair.findById(id);
-    if (!repair) {
-      return res.status(404).json({
-        success: false,
-        message: 'Repair entry not found',
-      });
-    }
+    const { data: repair, error: fetchError } = await supabase
+      .from('repairs')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    // Check if repair is pending
+    if (fetchError || !repair) {
+      return res.status(404).json({ success: false, message: 'Repair entry not found' });
+    }
     if (repair.status !== 'Pending') {
-      return res.status(400).json({
-        success: false,
-        message: 'Only pending repairs can be removed',
-      });
+      return res.status(400).json({ success: false, message: 'Only pending repairs can be removed' });
     }
 
-    // Delete the repair
-    await Repair.findByIdAndDelete(id);
+    const { error } = await supabase.from('repairs').delete().eq('id', id);
+    if (error) throw error;
 
-    res.json({
-      success: true,
-      message: 'Repair entry removed successfully',
-      data: { id },
-    });
+    res.json({ success: true, message: 'Repair entry removed successfully', data: { id } });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -376,4 +248,3 @@ router.post('/:id/delete', async (req, res) => {
 });
 
 module.exports = router;
-

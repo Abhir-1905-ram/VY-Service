@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "VY Service",
+    "slug": "vys",
+    "owner": "abhiram1905",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "androidStatusBar": {
+      "backgroundColor": "#081C45",
+      "barStyle": "light-content",
+      "translucent": false
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#081C45",
+      "barStyle": "light-content",
+      "visible": "leanback"
+    },
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#081C45"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vyservice.app",
+      "infoPlist": {
+        "UIViewControllerBasedStatusBarAppearance": false
+      }
+    },
+    "android": {
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#081C45"
+      },
+      "package": "com.vyservice.app",
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_CONTACTS"
+      ],
+      "versionCode": 2
+    },
+    "extra": {
+      "supabaseUrl": "https://rcvrdtednfwaexgtepld.supabase.co",
+      "supabasePublishableKey": "sb_publishable_XrOsND6b7U00JDnGHx2yTw_nNVIkDQl",
+      "eas": {
+        "projectId": "c139986a-c14b-4570-9f56-f5394b21c6ad"
+      }
+    }
+  }
+}
