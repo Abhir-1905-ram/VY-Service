@@ -1,3 +1,6 @@
+const EMPLOYEE_PUBLIC_COLUMNS =
+  'id, username, is_approved, allowed_cards, can_remove_repairs, created_at, updated_at';
+
 function mapEmployee(row) {
   if (!row) return row;
   return {
@@ -59,6 +62,7 @@ function isUniqueViolation(error) {
 }
 
 module.exports = {
+  EMPLOYEE_PUBLIC_COLUMNS,
   mapEmployee,
   mapRepair,
   mapAttendance,

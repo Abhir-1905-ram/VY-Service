@@ -336,7 +336,7 @@ export const updateEmployee = async (id, payload) => {
 
 export const deleteEmployee = async (id) => {
   try {
-    const { data, error } = await supabase.from('employees').delete().eq('id', id).select().single();
+    const { data, error } = await supabase.from('employees').delete().eq('id', id).select('id').single();
     if (error) return { success: false, message: error.message };
     return { success: true, data: { id: data.id } };
   } catch (error) {

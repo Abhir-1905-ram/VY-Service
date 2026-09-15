@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../lib/supabase');
-const { mapEmployee, isUniqueViolation } = require('../lib/dbHelpers');
+const { EMPLOYEE_PUBLIC_COLUMNS, mapEmployee, isUniqueViolation } = require('../lib/dbHelpers');
 
 // POST /api/employees/signup
 router.post('/signup', async (req, res) => {
@@ -23,7 +23,7 @@ router.post('/signup', async (req, res) => {
     const { data: emp, error } = await supabase
       .from('employees')
       .insert({ username, password, is_approved: false })
-      .select()
+      .select(EMPLOYEE_PUBLIC_COLUMNS)
       .single();
 
     if (error) {
@@ -76,7 +76,7 @@ router.put('/:id', async (req, res) => {
       .from('employees')
       .update(update)
       .eq('id', id)
-      .select()
+      .select(EMPLOYEE_PUBLIC_COLUMNS)
       .single();
 
     if (error) throw error;
@@ -103,7 +103,7 @@ router.get('/', async (_req, res) => {
   try {
     const { data: emps, error } = await supabase
       .from('employees')
-      .select('*')
+      .select(EMPLOYEE_PUBLIC_COLUMNS)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -119,7 +119,7 @@ router.get('/:id/cards', async (req, res) => {
     const { id } = req.params;
     const { data: emp, error } = await supabase
       .from('employees')
-      .select('*')
+      .select(EMPLOYEE_PUBLIC_COLUMNS)
       .eq('id', id)
       .single();
 
@@ -152,7 +152,7 @@ router.put('/:id/approve', async (req, res) => {
       .from('employees')
       .update({ is_approved: true })
       .eq('id', id)
-      .select()
+      .select(EMPLOYEE_PUBLIC_COLUMNS)
       .single();
 
     if (error || !emp) return res.status(404).json({ success: false, message: 'Employee not found' });
@@ -170,7 +170,7 @@ router.delete('/:id', async (req, res) => {
       .from('employees')
       .delete()
       .eq('id', id)
-      .select()
+      .select('id')
       .single();
 
     if (error || !emp) {
@@ -190,7 +190,7 @@ router.post('/:id/delete', async (req, res) => {
       .from('employees')
       .delete()
       .eq('id', id)
-      .select()
+      .select('id')
       .single();
 
     if (error || !emp) {

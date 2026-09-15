@@ -1,9 +1,13 @@
--- Fix Security Advisor:
+-- Fix Security Advisor ERRORS:
 --   rls_disabled_in_public  (employees, repairs, attendance)
 --   sensitive_columns_exposed (employees.password)
 --
--- Run ALL of this in Supabase → SQL Editor → Run
--- The publishable key can still read/write app data; passwords are no longer selectable.
+-- Run ALL of this in Supabase Dashboard → SQL Editor → Run
+-- Then open Advisors → Security and click Rerun.
+--
+-- The publishable key can still read/write app data.
+-- employees.password is writable for signup/password-change, but not selectable.
+-- Login goes through public.login_employee() so the password stays on the server.
 
 -- 1) RLS on
 ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
@@ -95,10 +99,16 @@ $$;
 REVOKE ALL ON FUNCTION public.login_employee(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.login_employee(text, text) TO anon, authenticated;
 
--- 5) Verify: rls_on must be true; password must not be selectable by anon
+NOTIFY pgrst, 'reload schema';
+
+-- 5) Verify: rls_on must be true; anon must not be able to SELECT password
 SELECT c.relname AS table_name, c.relrowsecurity AS rls_on
 FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public'
   AND c.relname IN ('employees', 'repairs', 'attendance')
 ORDER BY 1;
+
+SELECT
+  has_column_privilege('anon', 'public.employees', 'password', 'SELECT') AS anon_can_select_password,
+  has_column_privilege('authenticated', 'public.employees', 'password', 'SELECT') AS authenticated_can_select_password;

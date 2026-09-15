@@ -149,3 +149,5 @@ $$;
 
 REVOKE ALL ON FUNCTION public.login_employee(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.login_employee(text, text) TO anon, authenticated;
+
+NOTIFY pgrst, 'reload schema';
