@@ -264,16 +264,23 @@ export const login = async (username, password) => {
 
 export const signup = async (username, password) => {
   try {
-    const { data: existing } = await supabase.from('employees').select('id').eq('username', username).maybeSingle();
-    if (existing) return { success: false, message: 'Username already exists' };
-    const { data: emp, error } = await supabase
-      .from('employees')
-      .insert({ username, password, is_approved: false })
-      .select(EMPLOYEE_PUBLIC_COLUMNS)
-      .single();
-    if (error) return { success: false, message: error.message };
-    const mapped = mapEmployee(emp);
-    return { success: true, data: { id: mapped.id, username: mapped.username, isApproved: mapped.isApproved } };
+    const { data, error } = await supabase.rpc('signup_employee', {
+      p_username: username,
+      p_password: password,
+    });
+    if (error) {
+      if (error.message && error.message.includes('schema cache')) {
+        return { success: false, message: 'Database is not set up. Run grants.sql in Supabase SQL Editor.' };
+      }
+      return { success: false, message: error.message || 'Signup failed' };
+    }
+    if (!data?.ok) {
+      return { success: false, message: data?.message || 'Signup failed' };
+    }
+    return {
+      success: true,
+      data: { id: data.id, username: data.username, isApproved: !!data.is_approved },
+    };
   } catch (error) {
     return { success: false, message: error.message || 'Network error' };
   }

@@ -100,16 +100,8 @@ CREATE POLICY attendance_app_all ON public.attendance
   USING (true) WITH CHECK (true);
 
 REVOKE ALL ON TABLE public.employees FROM PUBLIC, anon, authenticated;
-GRANT SELECT (
-  id, username, is_approved, allowed_cards, can_remove_repairs, created_at, updated_at
-) ON public.employees TO anon, authenticated;
-GRANT INSERT (
-  username, password, is_approved, allowed_cards, can_remove_repairs
-) ON public.employees TO anon, authenticated;
-GRANT UPDATE (
-  username, password, is_approved, allowed_cards, can_remove_repairs
-) ON public.employees TO anon, authenticated;
-GRANT DELETE ON public.employees TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.employees TO anon, authenticated;
+REVOKE SELECT (password) ON public.employees FROM anon, authenticated;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.repairs TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.attendance TO anon, authenticated;
@@ -147,7 +139,43 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.signup_employee(p_username text, p_password text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  emp public.employees%ROWTYPE;
+BEGIN
+  IF p_username IS NULL OR length(trim(p_username)) = 0 OR p_password IS NULL OR length(p_password) = 0 THEN
+    RETURN jsonb_build_object('ok', false, 'message', 'Username and password required');
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.employees WHERE username = trim(p_username)) THEN
+    RETURN jsonb_build_object('ok', false, 'message', 'Username already exists');
+  END IF;
+
+  INSERT INTO public.employees (username, password, is_approved)
+  VALUES (trim(p_username), p_password, false)
+  RETURNING * INTO emp;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'id', emp.id,
+    'username', emp.username,
+    'is_approved', emp.is_approved
+  );
+EXCEPTION
+  WHEN unique_violation THEN
+    RETURN jsonb_build_object('ok', false, 'message', 'Username already exists');
+END;
+$$;
+
 REVOKE ALL ON FUNCTION public.login_employee(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.login_employee(text, text) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION public.signup_employee(text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.signup_employee(text, text) TO anon, authenticated;
 
 NOTIFY pgrst, 'reload schema';
