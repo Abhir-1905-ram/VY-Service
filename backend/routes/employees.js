@@ -1,71 +1,110 @@
 const express = require('express');
 const router = express.Router();
-const Employee = require('../models/Employee');
+const supabase = require('../lib/supabase');
+const { EMPLOYEE_PUBLIC_COLUMNS, mapEmployee, isUniqueViolation } = require('../lib/dbHelpers');
 
 // POST /api/employees/signup
 router.post('/signup', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, employeeKind } = req.body;
+    const kind = employeeKind === 'sales' ? 'sales' : 'employee';
     if (!username || !password) {
       return res.status(400).json({ success: false, message: 'Username and password required' });
     }
-    const existing = await Employee.findOne({ username });
+    const { data: existing } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('username', username)
+      .maybeSingle();
+
     if (existing) {
       return res.status(409).json({ success: false, message: 'Username already exists' });
     }
-    const emp = new Employee({ username, password, isApproved: false });
-    await emp.save();
-    res.status(201).json({ success: true, data: { id: emp._id, username: emp.username, isApproved: emp.isApproved } });
+
+    const { data: emp, error } = await supabase
+      .from('employees')
+      .insert({
+        username,
+        password,
+        is_approved: false,
+        employee_kind: kind,
+        allowed_cards: kind === 'sales' ? ['attendance'] : ['repair-service', 'repair-list', 'attendance'],
+        can_remove_repairs: false,
+      })
+      .select(EMPLOYEE_PUBLIC_COLUMNS)
+      .single();
+
+    if (error) {
+      if (isUniqueViolation(error)) {
+        return res.status(409).json({ success: false, message: 'Username already exists' });
+      }
+      throw error;
+    }
+
+    const mapped = mapEmployee(emp);
+    res.status(201).json({
+      success: true,
+      data: { id: mapped.id, username: mapped.username, isApproved: mapped.isApproved, employeeKind: mapped.employeeKind },
+    });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Signup failed', error: e.message });
   }
 });
 
-// PUT /api/employees/:id - update username/password
+// PUT /api/employees/:id
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, password, allowedCards, canRemoveRepairs } = req.body || {};
+    const { username, password, allowedCards, canRemoveRepairs, employeeKind } = req.body || {};
     const update = {};
+
     if (username) {
-      // ensure unique username
-      const existing = await Employee.findOne({ username });
-      if (existing && existing._id.toString() !== id) {
+      const { data: existing } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('username', username)
+        .maybeSingle();
+
+      if (existing && existing.id !== id) {
         return res.status(409).json({ success: false, message: 'Username already exists' });
       }
       update.username = username;
     }
     if (password) update.password = password;
+    const kind = employeeKind === 'sales' || employeeKind === 'employee' ? employeeKind : null;
     if (allowedCards !== undefined) {
-      // Validate allowedCards array - allow empty array to block all cards
-      const validCards = ['repair-service', 'repair-list', 'attendance'];
-      if (Array.isArray(allowedCards)) {
-        const filtered = allowedCards.filter(card => validCards.includes(card));
-        update.allowedCards = filtered;
-        console.log('Updating allowedCards for employee', id, 'to:', filtered);
-      } else {
-        update.allowedCards = [];
-        console.log('Updating allowedCards for employee', id, 'to empty array (invalid input)');
-      }
+      const validCards = kind === 'sales' ? ['attendance'] : ['repair-service', 'repair-list', 'attendance'];
+      update.allowed_cards = Array.isArray(allowedCards)
+        ? allowedCards.filter(card => validCards.includes(card))
+        : [];
+    } else if (kind === 'sales') {
+      update.allowed_cards = ['attendance'];
     }
-    if (canRemoveRepairs !== undefined) {
-      update.canRemoveRepairs = Boolean(canRemoveRepairs);
-      console.log('Updating canRemoveRepairs for employee', id, 'to:', update.canRemoveRepairs);
-    }
-    const emp = await Employee.findByIdAndUpdate(id, update, { new: true });
+    if (kind === 'sales') update.can_remove_repairs = false;
+    else if (canRemoveRepairs !== undefined) update.can_remove_repairs = Boolean(canRemoveRepairs);
+    if (kind) update.employee_kind = kind;
+
+    const { data: emp, error } = await supabase
+      .from('employees')
+      .update(update)
+      .eq('id', id)
+      .select(EMPLOYEE_PUBLIC_COLUMNS)
+      .single();
+
+    if (error) throw error;
     if (!emp) return res.status(404).json({ success: false, message: 'Employee not found' });
-    // Ensure allowedCards is always returned as an array
-    const returnedCards = Array.isArray(emp.allowedCards) ? emp.allowedCards : (emp.allowedCards ? [emp.allowedCards] : []);
-    console.log('Returning employee data with allowedCards:', returnedCards);
-    res.json({ 
-      success: true, 
-      data: { 
-        id: emp._id, 
-        username: emp.username, 
-        isApproved: emp.isApproved, 
-        allowedCards: returnedCards,
-        canRemoveRepairs: emp.canRemoveRepairs || false
-      } 
+
+    const mapped = mapEmployee(emp);
+    res.json({
+      success: true,
+      data: {
+        id: mapped.id,
+        username: mapped.username,
+        isApproved: mapped.isApproved,
+        allowedCards: mapped.allowedCards,
+        canRemoveRepairs: mapped.canRemoveRepairs,
+        employeeKind: mapped.employeeKind,
+      },
     });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to update employee', error: e.message });
@@ -75,41 +114,45 @@ router.put('/:id', async (req, res) => {
 // GET /api/employees
 router.get('/', async (_req, res) => {
   try {
-    const emps = await Employee.find().sort({ createdAt: -1 });
-    // Ensure allowedCards is always an array in the response
-    const empsWithCards = emps.map(emp => ({
-      ...emp.toObject(),
-      allowedCards: Array.isArray(emp.allowedCards) ? emp.allowedCards : (emp.allowedCards ? [emp.allowedCards] : [])
-    }));
-    res.json({ success: true, data: empsWithCards });
+    const { data: emps, error } = await supabase
+      .from('employees')
+      .select(EMPLOYEE_PUBLIC_COLUMNS)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ success: true, data: (emps || []).map(mapEmployee) });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to fetch employees', error: e.message });
   }
 });
 
-// GET /api/employees/:id/cards - get allowed cards for an employee
+// GET /api/employees/:id/cards
 router.get('/:id/cards', async (req, res) => {
   try {
     const { id } = req.params;
-    const emp = await Employee.findById(id);
-    if (!emp) return res.status(404).json({ success: false, message: 'Employee not found' });
-    // Return the actual allowedCards from database
-    // If field doesn't exist (undefined), return defaults. If empty array, return empty array.
+    const { data: emp, error } = await supabase
+      .from('employees')
+      .select(EMPLOYEE_PUBLIC_COLUMNS)
+      .eq('id', id)
+      .single();
+
+    if (error || !emp) return res.status(404).json({ success: false, message: 'Employee not found' });
+
+    const isSales = emp.employee_kind === 'sales';
     let cards = [];
-    if (emp.allowedCards === undefined || emp.allowedCards === null) {
-      // Field was never set, use defaults
-      cards = ['repair-service', 'repair-list', 'attendance'];
-    } else if (Array.isArray(emp.allowedCards)) {
-      // Field exists, return as-is (even if empty)
-      cards = emp.allowedCards;
+    if (emp.allowed_cards === undefined || emp.allowed_cards === null) {
+      cards = isSales ? ['attendance'] : ['repair-service', 'repair-list', 'attendance'];
+    } else if (Array.isArray(emp.allowed_cards)) {
+      cards = emp.allowed_cards;
     }
-    console.log('GET cards for employee', id, 'returning:', cards);
-    res.json({ 
-      success: true, 
-      data: { 
+    if (isSales) cards = cards.filter((card) => card === 'attendance');
+
+    res.json({
+      success: true,
+      data: {
         allowedCards: cards,
-        canRemoveRepairs: emp.canRemoveRepairs || false
-      } 
+        canRemoveRepairs: isSales ? false : emp.can_remove_repairs || false,
+      },
     });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to fetch cards', error: e.message });
@@ -120,9 +163,15 @@ router.get('/:id/cards', async (req, res) => {
 router.put('/:id/approve', async (req, res) => {
   try {
     const { id } = req.params;
-    const emp = await Employee.findByIdAndUpdate(id, { isApproved: true }, { new: true });
-    if (!emp) return res.status(404).json({ success: false, message: 'Employee not found' });
-    res.json({ success: true, data: emp });
+    const { data: emp, error } = await supabase
+      .from('employees')
+      .update({ is_approved: true })
+      .eq('id', id)
+      .select(EMPLOYEE_PUBLIC_COLUMNS)
+      .single();
+
+    if (error || !emp) return res.status(404).json({ success: false, message: 'Employee not found' });
+    res.json({ success: true, data: mapEmployee(emp) });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to approve employee', error: e.message });
   }
@@ -132,32 +181,40 @@ router.put('/:id/approve', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const emp = await Employee.findByIdAndDelete(id);
-    if (!emp) {
+    const { data: emp, error } = await supabase
+      .from('employees')
+      .delete()
+      .eq('id', id)
+      .select('id')
+      .single();
+
+    if (error || !emp) {
       return res.status(404).json({ success: false, message: 'Employee not found' });
     }
-    res.json({ success: true, data: { id: emp._id } });
+    res.json({ success: true, data: { id: emp.id } });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to delete employee', error: e.message });
   }
 });
 
-// Fallback for environments where DELETE might be blocked by proxies
 // POST /api/employees/:id/delete
 router.post('/:id/delete', async (req, res) => {
   try {
     const { id } = req.params;
-    const emp = await Employee.findByIdAndDelete(id);
-    if (!emp) {
+    const { data: emp, error } = await supabase
+      .from('employees')
+      .delete()
+      .eq('id', id)
+      .select('id')
+      .single();
+
+    if (error || !emp) {
       return res.status(404).json({ success: false, message: 'Employee not found' });
     }
-    res.json({ success: true, data: { id: emp._id } });
+    res.json({ success: true, data: { id: emp.id } });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to delete employee', error: e.message });
   }
 });
 
 module.exports = router;
-
-
-

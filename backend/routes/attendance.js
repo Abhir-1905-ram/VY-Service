@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const Attendance = require('../models/Attendance');
+const supabase = require('../lib/supabase');
+const { mapAttendance, isUniqueViolation } = require('../lib/dbHelpers');
 
 const OFFICE_WIFI_IP = process.env.OFFICE_WIFI_IP || '';
-const OFFICE_WIFI_CIDR = process.env.OFFICE_WIFI_CIDR || ''; // e.g., 192.168.200.0/24
+const OFFICE_WIFI_CIDR = process.env.OFFICE_WIFI_CIDR || '';
 const OFFICE_LAT = process.env.OFFICE_LAT ? parseFloat(process.env.OFFICE_LAT) : null;
 const OFFICE_LNG = process.env.OFFICE_LNG ? parseFloat(process.env.OFFICE_LNG) : null;
-const OFFICE_RADIUS_M = process.env.OFFICE_RADIUS_M ? parseFloat(process.env.OFFICE_RADIUS_M) : 150; // meters
+const OFFICE_RADIUS_M = process.env.OFFICE_RADIUS_M ? parseFloat(process.env.OFFICE_RADIUS_M) : 150;
 
 function toYyyyMmDd(date = new Date()) {
   const y = date.getFullYear();
@@ -54,25 +55,24 @@ function isIpAllowed(ip) {
 
 function haversineMeters(lat1, lon1, lat2, lon2) {
   const toRad = (x) => x * Math.PI / 180;
-  const R = 6371000; // meters
+  const R = 6371000;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
             Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
 function isLocationAllowed(lat, lng) {
-  if (typeof OFFICE_LAT !== 'number' || typeof OFFICE_LNG !== 'number') return true; // if not configured, skip check
+  if (typeof OFFICE_LAT !== 'number' || typeof OFFICE_LNG !== 'number') return true;
   if (typeof lat !== 'number' || typeof lng !== 'number') return false;
   const dist = haversineMeters(lat, lng, OFFICE_LAT, OFFICE_LNG);
   return dist <= (Number.isFinite(OFFICE_RADIUS_M) ? OFFICE_RADIUS_M : 150);
 }
 
 // POST /api/attendance/mark
-// body: { employeeId, currentIp, date?, lat?, lng?, accuracy?, employeeName? }
 router.post('/mark', async (req, res) => {
   try {
     const { employeeId, currentIp, date: requestedDate, lat, lng, accuracy, employeeName } = req.body || {};
@@ -97,34 +97,39 @@ router.post('/mark', async (req, res) => {
         ip: clientIp,
       });
     }
-    // Only allow marking for today (even if date is passed)
+
     const today = toYyyyMmDd();
     const date = requestedDate && String(requestedDate).slice(0, 10) === today ? today : today;
-    try {
-      const record = await Attendance.create({
-        employeeId,
-        employeeName: employeeName || undefined,
+
+    const { data: record, error } = await supabase
+      .from('attendance')
+      .insert({
+        employee_id: employeeId,
+        employee_name: employeeName || null,
         date,
-        ipAddress: clientIp,
+        ip_address: clientIp,
         lat: typeof lat === 'string' ? parseFloat(lat) : lat,
         lng: typeof lng === 'string' ? parseFloat(lng) : lng,
         accuracy: typeof accuracy === 'string' ? parseFloat(accuracy) : accuracy,
-        timestamp: new Date(),
-      });
-      return res.status(201).json({ success: true, data: record });
-    } catch (e) {
-      // Duplicate -> already marked
-      if (e && e.code === 11000) {
+        timestamp: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      if (isUniqueViolation(error)) {
         return res.status(200).json({ success: true, alreadyMarked: true, message: 'Attendance already marked for today' });
       }
-      throw e;
+      throw error;
     }
+
+    return res.status(201).json({ success: true, data: mapAttendance(record) });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to mark attendance', error: e.message });
   }
 });
 
-// GET /api/attendance/check?ip=192.168.x.x
+// GET /api/attendance/check
 router.get('/check', async (req, res) => {
   try {
     const clientIp = String(req.query.ip || '').trim();
@@ -163,30 +168,29 @@ router.get('/check', async (req, res) => {
   }
 });
 
-// GET /api/attendance/by-employee/:id?month=YYYY-MM
+// GET /api/attendance/by-employee/:id
 router.get('/by-employee/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const monthParam = String(req.query.month || '').trim(); // YYYY-MM
-    let start, end;
+    const monthParam = String(req.query.month || '').trim();
+    let start;
     if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
       const [y, m] = monthParam.split('-').map(n => parseInt(n, 10));
       start = new Date(y, m - 1, 1);
-      end = new Date(y, m, 1);
     } else {
-      // default: current month
       const now = new Date();
       start = new Date(now.getFullYear(), now.getMonth(), 1);
-      end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     }
-    const yyyyMm = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const monthPrefix = yyyyMm(start);
-    // Since we stored date as string YYYY-MM-DD, we can range by prefix
-    const docs = await Attendance.find({
-      employeeId: id,
-      date: { $regex: `^${monthPrefix}-` },
-    }).select('date -_id');
-    const dates = docs.map(d => d.date);
+    const yyyyMm = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
+
+    const { data: docs, error } = await supabase
+      .from('attendance')
+      .select('date')
+      .eq('employee_id', id)
+      .like('date', `${yyyyMm}-%`);
+
+    if (error) throw error;
+    const dates = (docs || []).map(d => d.date);
     res.json({ success: true, data: dates });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to fetch attendance', error: e.message });
@@ -194,22 +198,23 @@ router.get('/by-employee/:id', async (req, res) => {
 });
 
 // GET /api/attendance/today-count
-// Returns number of employees who are present today and, optionally, the list
 router.get('/today-count', async (req, res) => {
   try {
     const today = toYyyyMmDd();
-    const ids = await Attendance.distinct('employeeId', { date: today });
-    const count = Array.isArray(ids) ? ids.length : 0;
-    res.json({ success: true, data: { count, employeeIds: ids || [] } });
+    const { data: records, error } = await supabase
+      .from('attendance')
+      .select('employee_id')
+      .eq('date', today);
+
+    if (error) throw error;
+    const ids = [...new Set((records || []).map(r => r.employee_id))];
+    res.json({ success: true, data: { count: ids.length, employeeIds: ids } });
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to fetch today count', error: e.message });
   }
 });
 
-module.exports = router;
-
-// Admin override: set/unset attendance for any date (no IP/location check)
-// POST /api/attendance/admin/set  { employeeId, date: 'YYYY-MM-DD', present: true|false, employeeName? }
+// POST /api/attendance/admin/set
 router.post('/admin/set', async (req, res) => {
   try {
     const { employeeId, date, present, employeeName } = req.body || {};
@@ -220,25 +225,35 @@ router.post('/admin/set', async (req, res) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
       return res.status(400).json({ success: false, message: 'date must be YYYY-MM-DD' });
     }
+
     if (present) {
-      const doc = await Attendance.findOneAndUpdate(
-        { employeeId, date: dateKey },
-        {
-          $set: {
-            employeeId,
-            employeeName: employeeName || undefined,
-            date: dateKey,
-            timestamp: new Date(),
-          },
-        },
-        { upsert: true, new: true }
-      );
-      return res.json({ success: true, data: doc });
+      const { data: doc, error } = await supabase
+        .from('attendance')
+        .upsert({
+          employee_id: employeeId,
+          employee_name: employeeName || null,
+          date: dateKey,
+          ip_address: 'admin',
+          timestamp: new Date().toISOString(),
+        }, { onConflict: 'employee_id,date' })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return res.json({ success: true, data: mapAttendance(doc) });
     } else {
-      await Attendance.deleteOne({ employeeId, date: dateKey });
+      const { error } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('employee_id', employeeId)
+        .eq('date', dateKey);
+
+      if (error) throw error;
       return res.json({ success: true, removed: true });
     }
   } catch (e) {
     res.status(500).json({ success: false, message: 'Failed to set attendance', error: e.message });
   }
 });
+
+module.exports = router;

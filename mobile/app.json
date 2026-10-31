@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "VY Service",
+    "slug": "vys",
+    "owner": "amenityforge_2026",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "androidStatusBar": {
+      "backgroundColor": "#081C45",
+      "barStyle": "light-content",
+      "translucent": false
+    },
+    "icon": "./assets/icon.png",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vyservice.app",
+      "infoPlist": {
+        "UIViewControllerBasedStatusBarAppearance": false
+      }
+    },
+    "android": {
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#081C45"
+      },
+      "package": "com.vyservice.app",
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_CONTACTS"
+      ],
+      "versionCode": 2
+    },
+    "extra": {
+      "supabaseUrl": "https://rcvrdtednfwaexgtepld.supabase.co",
+      "supabasePublishableKey": "sb_publishable_XrOsND6b7U00JDnGHx2yTw_nNVIkDQl",
+      "expo-navigation-bar": {
+        "enforceContrast": false,
+        "style": "light",
+        "hidden": true
+      },
+      "eas": {
+        "projectId": "eea09fbc-485e-4386-bb45-70bcf47a27a6"
+      }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      "expo-status-bar",
+      [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": false,
+          "hidden": true,
+          "style": "light"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#081C45"
+        }
+      ]
+    ]
+  }
+}
