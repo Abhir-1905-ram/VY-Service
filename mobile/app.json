@@ -2,11 +2,7 @@
   "expo": {
     "name": "VY Service",
     "slug": "vys",
-<<<<<<< HEAD
     "owner": "amenityforge_2026",
-=======
-    "owner": "abhiram1905",
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -15,21 +11,7 @@
       "barStyle": "light-content",
       "translucent": false
     },
-<<<<<<< HEAD
     "icon": "./assets/icon.png",
-=======
-    "androidNavigationBar": {
-      "backgroundColor": "#081C45",
-      "barStyle": "light-content",
-      "visible": "leanback"
-    },
-    "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#081C45"
-    },
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -58,7 +40,6 @@
     "extra": {
       "supabaseUrl": "https://rcvrdtednfwaexgtepld.supabase.co",
       "supabasePublishableKey": "sb_publishable_XrOsND6b7U00JDnGHx2yTw_nNVIkDQl",
-<<<<<<< HEAD
       "expo-navigation-bar": {
         "enforceContrast": false,
         "style": "light",
@@ -89,11 +70,5 @@
         }
       ]
     ]
-=======
-      "eas": {
-        "projectId": "c139986a-c14b-4570-9f56-f5394b21c6ad"
-      }
-    }
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   }
 }

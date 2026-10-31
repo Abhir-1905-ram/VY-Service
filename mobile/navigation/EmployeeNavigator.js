@@ -6,11 +6,8 @@ import EmployeeRepairListScreen from '../screens/employee/EmployeeRepairListScre
 import ProfileScreen from '../screens/common/ProfileScreen';
 import SettingsScreen from '../screens/common/SettingsScreen';
 import AttendanceScreen from '../screens/employee/AttendanceScreen';
-<<<<<<< HEAD
 import OrderListScreen from '../screens/orders/OrderListScreen';
 import OrderFormScreen from '../screens/orders/OrderFormScreen';
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 import RepairEditScreen from '../screens/admin/RepairEditScreen';
 import { colors } from '../ui/Theme';
 
@@ -32,11 +29,8 @@ export default function EmployeeNavigator() {
       <Stack.Screen name="EmployeeProfile" component={ProfileScreen} />
       <Stack.Screen name="EmployeeSettings" component={SettingsScreen} />
       <Stack.Screen name="Attendance" component={AttendanceScreen} />
-<<<<<<< HEAD
       <Stack.Screen name="EmployeeOrders" component={OrderListScreen} initialParams={{ mode: 'employee' }} />
       <Stack.Screen name="EmployeeOrderForm" component={OrderFormScreen} />
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
     </Stack.Navigator>
   );
 }

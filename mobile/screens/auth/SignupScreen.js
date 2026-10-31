@@ -7,7 +7,6 @@ import AppCard from '../../components/AppCard';
 import AppInput from '../../components/AppInput';
 import AppButton from '../../components/AppButton';
 import Banner from '../../components/Banner';
-<<<<<<< HEAD
 import ChoiceChips from '../../components/ChoiceChips';
 import Icon from '../../components/Icon';
 import { colors, spacing, typography } from '../../ui/Theme';
@@ -20,13 +19,6 @@ const ACCOUNT_KINDS = [
 export default function SignupScreen({ navigation, route }) {
   const { signUp } = useContext(AuthContext);
   const [employeeKind, setEmployeeKind] = useState(route.params?.employeeKind === 'sales' ? 'sales' : 'employee');
-=======
-import Icon from '../../components/Icon';
-import { colors, spacing, typography } from '../../ui/Theme';
-
-export default function SignupScreen({ navigation }) {
-  const { signUp } = useContext(AuthContext);
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -42,11 +34,7 @@ export default function SignupScreen({ navigation }) {
       return;
     }
     setLoading(true);
-<<<<<<< HEAD
     const res = await signUp(username.trim(), password, employeeKind);
-=======
-    const res = await signUp(username.trim(), password);
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
     if (res.success) {
       setMessage('Signup successful. Wait for admin approval.');
     } else {
@@ -61,7 +49,6 @@ export default function SignupScreen({ navigation }) {
     <Screen
       scroll
       keyboard
-<<<<<<< HEAD
       header={<AppHeader large showBrand subtitle="Vyshnavi Computers" title={employeeKind === 'sales' ? 'Sales sign up' : 'Employee sign up'} onBackPress={() => navigation.goBack()} />}
       contentStyle={styles.content}
     >
@@ -74,14 +61,6 @@ export default function SignupScreen({ navigation }) {
       <AppCard style={styles.card}>
         <Text style={styles.kindLabel}>Sign in as</Text>
         <ChoiceChips options={ACCOUNT_KINDS} value={employeeKind} onChange={setEmployeeKind} style={styles.kinds} />
-=======
-      header={<AppHeader large showBrand subtitle="Vyshnavi Computers" title="Employee sign up" onBackPress={() => navigation.goBack()} />}
-      contentStyle={styles.content}
-    >
-      <Text style={styles.lead}>Create your account. An admin will approve it before you can log in.</Text>
-
-      <AppCard style={styles.card}>
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
         <Banner tone={isSuccess ? 'success' : 'danger'} message={message} style={styles.banner} />
         <AppInput
           label="Username"
@@ -139,11 +118,8 @@ const styles = StyleSheet.create({
   content: { paddingTop: spacing.xl },
   lead: { ...typography.small, marginBottom: spacing.lg, paddingHorizontal: spacing.xs },
   card: { padding: spacing.xl },
-<<<<<<< HEAD
   kindLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: spacing.sm },
   kinds: { marginBottom: spacing.lg },
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   banner: { marginBottom: spacing.lg },
   field: { marginBottom: spacing.lg },
   linkRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xl, paddingVertical: spacing.sm },

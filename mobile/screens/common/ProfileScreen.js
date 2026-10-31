@@ -84,13 +84,9 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.name}>{name}</Text>
         <View style={styles.roleChip}>
           <Icon name="briefcase-outline" size={12} color={colors.primaryDark} />
-<<<<<<< HEAD
           <Text style={styles.roleText}>
             {user?.role === 'admin' ? 'Admin' : user?.employeeKind === 'sales' ? 'Sales employee' : 'Employee'}
           </Text>
-=======
-          <Text style={styles.roleText}>{user?.role === 'admin' ? 'Admin' : 'Employee'}</Text>
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
         </View>
       </View>
 
@@ -136,15 +132,11 @@ export default function ProfileScreen({ navigation }) {
         </AppCard>
 
         <AppCard style={styles.card} padded={false}>
-<<<<<<< HEAD
           <TouchableOpacity
             style={styles.menuRow}
             onPress={() => navigation.navigate(user?.employeeKind === 'sales' ? 'SalesSettings' : 'EmployeeSettings')}
             activeOpacity={0.8}
           >
-=======
-          <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('EmployeeSettings')} activeOpacity={0.8}>
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
             <View style={styles.rowIcon}>
               <Icon name="settings-outline" size={18} color={colors.primary} />
             </View>

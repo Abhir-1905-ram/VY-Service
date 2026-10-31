@@ -12,7 +12,6 @@ import EmptyState from '../../components/EmptyState';
 import Icon from '../../components/Icon';
 import { colors, spacing, tones, radii } from '../../ui/Theme';
 
-<<<<<<< HEAD
 function KindPill({ kind }) {
   const sales = kind === 'sales';
   const t = sales ? tones.info : tones.neutral;
@@ -24,8 +23,6 @@ function KindPill({ kind }) {
   );
 }
 
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 function ApprovalPill({ approved }) {
   const t = approved ? tones.success : tones.warning;
   return (
@@ -91,14 +88,10 @@ export default function EmployeeListScreen({ navigation }) {
         <Avatar name={item.username} size={46} />
         <View style={styles.identity}>
           <Text style={styles.name} numberOfLines={1}>{item.username}</Text>
-<<<<<<< HEAD
           <View style={styles.pills}>
             <ApprovalPill approved={item.isApproved} />
             <KindPill kind={item.employeeKind} />
           </View>
-=======
-          <ApprovalPill approved={item.isApproved} />
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
         </View>
       </View>
       <View style={styles.actions}>
@@ -159,10 +152,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center' },
   identity: { flex: 1, marginLeft: spacing.md },
   name: { fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 4 },
-<<<<<<< HEAD
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: radii.round },
   pillText: { fontSize: 11, fontWeight: '800' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.md },

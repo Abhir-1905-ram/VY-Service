@@ -8,10 +8,7 @@ CREATE TABLE IF NOT EXISTS employees (
   is_approved BOOLEAN DEFAULT FALSE,
   allowed_cards TEXT[] DEFAULT ARRAY['repair-service', 'repair-list', 'attendance'],
   can_remove_repairs BOOLEAN DEFAULT FALSE,
-<<<<<<< HEAD
   employee_kind TEXT NOT NULL DEFAULT 'employee' CHECK (employee_kind IN ('sales', 'employee')),
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -57,7 +54,6 @@ CREATE TABLE IF NOT EXISTS attendance (
 
 CREATE INDEX IF NOT EXISTS idx_attendance_employee_date ON attendance(employee_id, date);
 
-<<<<<<< HEAD
 -- Sales orders
 CREATE TABLE IF NOT EXISTS sales_orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -78,8 +74,6 @@ CREATE TABLE IF NOT EXISTS sales_orders (
 CREATE INDEX IF NOT EXISTS idx_sales_orders_created_at ON sales_orders(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sales_orders_created_by ON sales_orders(created_by);
 
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
@@ -104,31 +98,22 @@ CREATE TRIGGER attendance_updated_at
   BEFORE UPDATE ON attendance
   FOR EACH ROW EXECUTE PROCEDURE update_updated_at();
 
-<<<<<<< HEAD
 DROP TRIGGER IF EXISTS sales_orders_updated_at ON sales_orders;
 CREATE TRIGGER sales_orders_updated_at
   BEFORE UPDATE ON sales_orders
   FOR EACH ROW EXECUTE PROCEDURE update_updated_at();
 
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 
 ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.repairs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
-<<<<<<< HEAD
 ALTER TABLE public.sales_orders ENABLE ROW LEVEL SECURITY;
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
 DROP POLICY IF EXISTS employees_app_all ON public.employees;
 DROP POLICY IF EXISTS repairs_app_all ON public.repairs;
 DROP POLICY IF EXISTS attendance_app_all ON public.attendance;
-<<<<<<< HEAD
 DROP POLICY IF EXISTS sales_orders_app_all ON public.sales_orders;
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
 CREATE POLICY employees_app_all ON public.employees
   FOR ALL TO anon, authenticated
@@ -142,23 +127,17 @@ CREATE POLICY attendance_app_all ON public.attendance
   FOR ALL TO anon, authenticated
   USING (true) WITH CHECK (true);
 
-<<<<<<< HEAD
 CREATE POLICY sales_orders_app_all ON public.sales_orders
   FOR ALL TO anon, authenticated
   USING (true) WITH CHECK (true);
 
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 REVOKE ALL ON TABLE public.employees FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.employees TO anon, authenticated;
 REVOKE SELECT (password) ON public.employees FROM anon, authenticated;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.repairs TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.attendance TO anon, authenticated;
-<<<<<<< HEAD
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.sales_orders TO anon, authenticated;
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
 CREATE OR REPLACE FUNCTION public.login_employee(p_username text, p_password text)
 RETURNS jsonb
@@ -188,23 +167,15 @@ BEGIN
     'username', emp.username,
     'is_approved', emp.is_approved,
     'allowed_cards', to_jsonb(COALESCE(emp.allowed_cards, ARRAY[]::text[])),
-<<<<<<< HEAD
     'can_remove_repairs', COALESCE(emp.can_remove_repairs, false),
     'employee_kind', COALESCE(emp.employee_kind, 'employee')
-=======
-    'can_remove_repairs', COALESCE(emp.can_remove_repairs, false)
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   );
 END;
 $$;
 
-<<<<<<< HEAD
 DROP FUNCTION IF EXISTS public.signup_employee(text, text);
 
 CREATE OR REPLACE FUNCTION public.signup_employee(p_username text, p_password text, p_kind text DEFAULT 'employee')
-=======
-CREATE OR REPLACE FUNCTION public.signup_employee(p_username text, p_password text)
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -212,25 +183,18 @@ SET search_path = public
 AS $$
 DECLARE
   emp public.employees%ROWTYPE;
-<<<<<<< HEAD
   kind text;
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 BEGIN
   IF p_username IS NULL OR length(trim(p_username)) = 0 OR p_password IS NULL OR length(p_password) = 0 THEN
     RETURN jsonb_build_object('ok', false, 'message', 'Username and password required');
   END IF;
 
-<<<<<<< HEAD
   kind := CASE WHEN lower(trim(COALESCE(p_kind, ''))) = 'sales' THEN 'sales' ELSE 'employee' END;
 
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   IF EXISTS (SELECT 1 FROM public.employees WHERE username = trim(p_username)) THEN
     RETURN jsonb_build_object('ok', false, 'message', 'Username already exists');
   END IF;
 
-<<<<<<< HEAD
   INSERT INTO public.employees (username, password, is_approved, employee_kind, allowed_cards, can_remove_repairs)
   VALUES (
     trim(p_username),
@@ -240,22 +204,14 @@ BEGIN
     CASE WHEN kind = 'sales' THEN ARRAY['attendance']::text[] ELSE ARRAY['repair-service', 'repair-list', 'attendance']::text[] END,
     false
   )
-=======
-  INSERT INTO public.employees (username, password, is_approved)
-  VALUES (trim(p_username), p_password, false)
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   RETURNING * INTO emp;
 
   RETURN jsonb_build_object(
     'ok', true,
     'id', emp.id,
     'username', emp.username,
-<<<<<<< HEAD
     'is_approved', emp.is_approved,
     'employee_kind', emp.employee_kind
-=======
-    'is_approved', emp.is_approved
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   );
 EXCEPTION
   WHEN unique_violation THEN
@@ -266,12 +222,7 @@ $$;
 REVOKE ALL ON FUNCTION public.login_employee(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.login_employee(text, text) TO anon, authenticated;
 
-<<<<<<< HEAD
 REVOKE ALL ON FUNCTION public.signup_employee(text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.signup_employee(text, text, text) TO anon, authenticated;
-=======
-REVOKE ALL ON FUNCTION public.signup_employee(text, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.signup_employee(text, text) TO anon, authenticated;
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
 NOTIFY pgrst, 'reload schema';

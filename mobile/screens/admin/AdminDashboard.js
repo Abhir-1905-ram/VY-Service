@@ -81,7 +81,6 @@ export default function AdminDashboard({ navigation }) {
         onPress={() => navigation.navigate('AdminEmployees')}
       />
       <ActionCardButton
-<<<<<<< HEAD
         title="Orders"
         subtitle="Create, approve and deliver"
         icon="bag-handle-outline"
@@ -89,8 +88,6 @@ export default function AdminDashboard({ navigation }) {
         onPress={() => navigation.navigate('AdminOrders')}
       />
       <ActionCardButton
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
         title="Attendance"
         subtitle="View & edit"
         icon="calendar-outline"

@@ -23,7 +23,6 @@ router.post('/signup', async (req, res) => {
 
     const { data: emp, error } = await supabase
       .from('employees')
-<<<<<<< HEAD
       .insert({
         username,
         password,
@@ -32,9 +31,6 @@ router.post('/signup', async (req, res) => {
         allowed_cards: kind === 'sales' ? ['attendance'] : ['repair-service', 'repair-list', 'attendance'],
         can_remove_repairs: false,
       })
-=======
-      .insert({ username, password, is_approved: false })
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
       .select(EMPLOYEE_PUBLIC_COLUMNS)
       .single();
 
@@ -46,14 +42,10 @@ router.post('/signup', async (req, res) => {
     }
 
     const mapped = mapEmployee(emp);
-<<<<<<< HEAD
     res.status(201).json({
       success: true,
       data: { id: mapped.id, username: mapped.username, isApproved: mapped.isApproved, employeeKind: mapped.employeeKind },
     });
-=======
-    res.status(201).json({ success: true, data: { id: mapped.id, username: mapped.username, isApproved: mapped.isApproved } });
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   } catch (e) {
     res.status(500).json({ success: false, message: 'Signup failed', error: e.message });
   }
@@ -81,7 +73,6 @@ router.put('/:id', async (req, res) => {
     if (password) update.password = password;
     const kind = employeeKind === 'sales' || employeeKind === 'employee' ? employeeKind : null;
     if (allowedCards !== undefined) {
-<<<<<<< HEAD
       const validCards = kind === 'sales' ? ['attendance'] : ['repair-service', 'repair-list', 'attendance'];
       update.allowed_cards = Array.isArray(allowedCards)
         ? allowedCards.filter(card => validCards.includes(card))
@@ -92,18 +83,6 @@ router.put('/:id', async (req, res) => {
     if (kind === 'sales') update.can_remove_repairs = false;
     else if (canRemoveRepairs !== undefined) update.can_remove_repairs = Boolean(canRemoveRepairs);
     if (kind) update.employee_kind = kind;
-=======
-      const validCards = ['repair-service', 'repair-list', 'attendance'];
-      if (Array.isArray(allowedCards)) {
-        update.allowed_cards = allowedCards.filter(card => validCards.includes(card));
-      } else {
-        update.allowed_cards = [];
-      }
-    }
-    if (canRemoveRepairs !== undefined) {
-      update.can_remove_repairs = Boolean(canRemoveRepairs);
-    }
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
     const { data: emp, error } = await supabase
       .from('employees')
@@ -124,10 +103,7 @@ router.put('/:id', async (req, res) => {
         isApproved: mapped.isApproved,
         allowedCards: mapped.allowedCards,
         canRemoveRepairs: mapped.canRemoveRepairs,
-<<<<<<< HEAD
         employeeKind: mapped.employeeKind,
-=======
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
       },
     });
   } catch (e) {
@@ -162,7 +138,6 @@ router.get('/:id/cards', async (req, res) => {
 
     if (error || !emp) return res.status(404).json({ success: false, message: 'Employee not found' });
 
-<<<<<<< HEAD
     const isSales = emp.employee_kind === 'sales';
     let cards = [];
     if (emp.allowed_cards === undefined || emp.allowed_cards === null) {
@@ -171,24 +146,12 @@ router.get('/:id/cards', async (req, res) => {
       cards = emp.allowed_cards;
     }
     if (isSales) cards = cards.filter((card) => card === 'attendance');
-=======
-    let cards = [];
-    if (emp.allowed_cards === undefined || emp.allowed_cards === null) {
-      cards = ['repair-service', 'repair-list', 'attendance'];
-    } else if (Array.isArray(emp.allowed_cards)) {
-      cards = emp.allowed_cards;
-    }
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
     res.json({
       success: true,
       data: {
         allowedCards: cards,
-<<<<<<< HEAD
         canRemoveRepairs: isSales ? false : emp.can_remove_repairs || false,
-=======
-        canRemoveRepairs: emp.can_remove_repairs || false,
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
       },
     });
   } catch (e) {

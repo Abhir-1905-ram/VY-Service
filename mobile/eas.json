@@ -5,11 +5,7 @@
   },
   "build": {
     "development": {
-<<<<<<< HEAD
       "node": "24.16.0",
-=======
-      "node": "18.20.4",
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
       "developmentClient": true,
       "distribution": "internal",
       "credentialsSource": "remote",
@@ -19,11 +15,7 @@
       }
     },
     "apk": {
-<<<<<<< HEAD
       "node": "24.16.0",
-=======
-      "node": "18.20.4",
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
       "distribution": "internal",
       "credentialsSource": "remote",
       "autoIncrement": true,
@@ -33,11 +25,7 @@
       }
     },
     "production": {
-<<<<<<< HEAD
       "node": "24.16.0",
-=======
-      "node": "18.20.4",
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
       "credentialsSource": "remote",
       "android": {
         "buildType": "apk",

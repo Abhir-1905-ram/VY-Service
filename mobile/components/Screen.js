@@ -1,11 +1,6 @@
-<<<<<<< HEAD
 import React, { useCallback, useState } from 'react';
 import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-=======
-import React from 'react';
-import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../ui/Theme';
 
@@ -23,7 +18,6 @@ export default function Screen({
   contentStyle,
   style,
   keyboardShouldPersistTaps = 'always',
-<<<<<<< HEAD
   keyboardDismissMode = 'on-drag',
   onScroll,
   scrollRef,
@@ -48,17 +42,11 @@ export default function Screen({
       };
     }, [keyboard])
   );
-=======
-}) {
-  const insets = useSafeAreaInsets();
-  const paddingTop = header ? 0 : insets.top;
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
   let body;
   if (scroll) {
     body = (
       <ScrollView
-<<<<<<< HEAD
         ref={scrollRef}
         style={styles.flex}
         contentContainerStyle={[
@@ -74,14 +62,6 @@ export default function Screen({
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={onScroll}
-=======
-        style={styles.flex}
-        contentContainerStyle={[padded && styles.padded, styles.scrollContent, contentStyle]}
-        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
-        keyboardDismissMode="on-drag"
-        nestedScrollEnabled
-        showsVerticalScrollIndicator={false}
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
         refreshControl={refreshControl}
       >
         {children}
@@ -91,21 +71,12 @@ export default function Screen({
     body = <View style={[styles.flex, padded && styles.padded, contentStyle]}>{children}</View>;
   }
 
-<<<<<<< HEAD
   if (keyboard) {
     body = (
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={insets.top}
-=======
-  if (keyboard && Platform.OS === 'ios') {
-    body = (
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior="padding"
-        keyboardVerticalOffset={80}
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
       >
         {body}
       </KeyboardAvoidingView>

@@ -42,16 +42,11 @@ router.post('/login', async (req, res) => {
       user: {
         id: mapped.id,
         username: mapped.username,
-<<<<<<< HEAD
         employeeKind: mapped.employeeKind,
         allowedCards: mapped.employeeKind === 'sales'
           ? mapped.allowedCards.filter((card) => card === 'attendance')
           : (mapped.allowedCards.length ? mapped.allowedCards : ['repair-service', 'repair-list', 'attendance']),
         canRemoveRepairs: mapped.employeeKind === 'sales' ? false : mapped.canRemoveRepairs,
-=======
-        allowedCards: mapped.allowedCards.length ? mapped.allowedCards : ['repair-service', 'repair-list', 'attendance'],
-        canRemoveRepairs: mapped.canRemoveRepairs,
->>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
       },
     });
   } catch (e) {
