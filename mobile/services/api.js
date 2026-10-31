@@ -17,7 +17,10 @@ function mapEmployee(row) {
     isApproved: row.is_approved,
     allowedCards: row.allowed_cards || [],
     canRemoveRepairs: row.can_remove_repairs || false,
+<<<<<<< HEAD
     employeeKind: row.employee_kind === 'sales' ? 'sales' : 'employee',
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -110,7 +113,11 @@ function isLocationAllowed(lat, lng) {
 }
 
 const EMPLOYEE_PUBLIC_COLUMNS =
+<<<<<<< HEAD
   'id, username, is_approved, allowed_cards, can_remove_repairs, employee_kind, created_at, updated_at';
+=======
+  'id, username, is_approved, allowed_cards, can_remove_repairs, created_at, updated_at';
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
 function uniqueViolation(error) {
   return error?.code === '23505';
@@ -246,10 +253,13 @@ export const login = async (username, password) => {
       return { success: false, message: data?.message || 'Invalid credentials' };
     }
     const cards = Array.isArray(data.allowed_cards) ? data.allowed_cards : [];
+<<<<<<< HEAD
     const employeeKind = data.employee_kind === 'sales' ? 'sales' : 'employee';
     const allowedCards = employeeKind === 'sales'
       ? cards.filter((card) => card === 'attendance')
       : (cards.length ? cards : ['repair-service', 'repair-list', 'attendance']);
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
     return {
       success: true,
       data: {
@@ -257,9 +267,14 @@ export const login = async (username, password) => {
         user: {
           id: data.id,
           username: data.username,
+<<<<<<< HEAD
           employeeKind,
           allowedCards: allowedCards.length ? allowedCards : (employeeKind === 'sales' ? ['attendance'] : allowedCards),
           canRemoveRepairs: employeeKind === 'sales' ? false : !!data.can_remove_repairs,
+=======
+          allowedCards: cards.length ? cards : ['repair-service', 'repair-list', 'attendance'],
+          canRemoveRepairs: !!data.can_remove_repairs,
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
         },
       },
     };
@@ -268,6 +283,7 @@ export const login = async (username, password) => {
   }
 };
 
+<<<<<<< HEAD
 export const signup = async (username, password, employeeKind = 'employee') => {
   try {
     const kind = employeeKind === 'sales' ? 'sales' : 'employee';
@@ -275,6 +291,13 @@ export const signup = async (username, password, employeeKind = 'employee') => {
       p_username: username,
       p_password: password,
       p_kind: kind,
+=======
+export const signup = async (username, password) => {
+  try {
+    const { data, error } = await supabase.rpc('signup_employee', {
+      p_username: username,
+      p_password: password,
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
     });
     if (error) {
       if (error.message && error.message.includes('schema cache')) {
@@ -287,12 +310,16 @@ export const signup = async (username, password, employeeKind = 'employee') => {
     }
     return {
       success: true,
+<<<<<<< HEAD
       data: {
         id: data.id,
         username: data.username,
         isApproved: !!data.is_approved,
         employeeKind: data.employee_kind === 'sales' ? 'sales' : kind,
       },
+=======
+      data: { id: data.id, username: data.username, isApproved: !!data.is_approved },
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
     };
   } catch (error) {
     return { success: false, message: error.message || 'Network error' };
@@ -328,6 +355,7 @@ export const updateEmployee = async (id, payload) => {
       update.username = payload.username;
     }
     if (payload.password) update.password = payload.password;
+<<<<<<< HEAD
     const kind = payload.employeeKind === 'sales' || payload.employeeKind === 'employee' ? payload.employeeKind : null;
     if (payload.allowedCards !== undefined) {
       const validCards = kind === 'sales' ? ['attendance'] : ['repair-service', 'repair-list', 'attendance'];
@@ -340,6 +368,15 @@ export const updateEmployee = async (id, payload) => {
     if (kind === 'sales') update.can_remove_repairs = false;
     else if (payload.canRemoveRepairs !== undefined) update.can_remove_repairs = Boolean(payload.canRemoveRepairs);
     if (kind) update.employee_kind = kind;
+=======
+    if (payload.allowedCards !== undefined) {
+      const validCards = ['repair-service', 'repair-list', 'attendance'];
+      update.allowed_cards = Array.isArray(payload.allowedCards)
+        ? payload.allowedCards.filter((card) => validCards.includes(card))
+        : [];
+    }
+    if (payload.canRemoveRepairs !== undefined) update.can_remove_repairs = Boolean(payload.canRemoveRepairs);
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
     const { data, error } = await supabase.from('employees').update(update).eq('id', id).select(EMPLOYEE_PUBLIC_COLUMNS).single();
     if (error) return { success: false, message: error.message };
@@ -352,7 +389,10 @@ export const updateEmployee = async (id, payload) => {
         isApproved: mapped.isApproved,
         allowedCards: mapped.allowedCards,
         canRemoveRepairs: mapped.canRemoveRepairs,
+<<<<<<< HEAD
         employeeKind: mapped.employeeKind,
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
       },
     };
   } catch (error) {
@@ -374,6 +414,7 @@ export const getEmployeeCards = async (employeeId) => {
   try {
     const { data: emp, error } = await supabase.from('employees').select(EMPLOYEE_PUBLIC_COLUMNS).eq('id', employeeId).single();
     if (error || !emp) return { success: false, message: 'Employee not found' };
+<<<<<<< HEAD
     const isSales = emp.employee_kind === 'sales';
     let cards = [];
     if (emp.allowed_cards === undefined || emp.allowed_cards === null) {
@@ -383,6 +424,15 @@ export const getEmployeeCards = async (employeeId) => {
     }
     if (isSales) cards = cards.filter((card) => card === 'attendance');
     return { success: true, data: { allowedCards: cards, canRemoveRepairs: isSales ? false : emp.can_remove_repairs || false } };
+=======
+    let cards = [];
+    if (emp.allowed_cards === undefined || emp.allowed_cards === null) {
+      cards = ['repair-service', 'repair-list', 'attendance'];
+    } else if (Array.isArray(emp.allowed_cards)) {
+      cards = emp.allowed_cards;
+    }
+    return { success: true, data: { allowedCards: cards, canRemoveRepairs: emp.can_remove_repairs || false } };
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   } catch (error) {
     return { success: false, message: error.message || 'Network error' };
   }
@@ -518,6 +568,7 @@ export const adminSetAttendance = async (employeeId, date, present, employeeName
   }
 };
 
+<<<<<<< HEAD
 function mapOrder(row) {
   if (!row) return row;
   return {
@@ -664,6 +715,8 @@ export const updateOrderStatus = async (id, status, viewerName) => {
   }
 };
 
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 export const getTodayPresentCount = async () => {
   try {
     const today = toYyyyMmDd();

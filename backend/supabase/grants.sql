@@ -48,6 +48,7 @@ REVOKE SELECT (password) ON public.employees FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.repairs TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.attendance TO anon, authenticated;
 
+<<<<<<< HEAD
 -- 4) Employee kind: sales or normal employee
 ALTER TABLE public.employees
   ADD COLUMN IF NOT EXISTS employee_kind TEXT NOT NULL DEFAULT 'employee';
@@ -64,6 +65,9 @@ BEGIN
 END $$;
 
 -- 5) Login RPC (password never leaves the server)
+=======
+-- 4) Login RPC (password never leaves the server)
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 CREATE OR REPLACE FUNCTION public.login_employee(p_username text, p_password text)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -92,16 +96,25 @@ BEGIN
     'username', emp.username,
     'is_approved', emp.is_approved,
     'allowed_cards', to_jsonb(COALESCE(emp.allowed_cards, ARRAY[]::text[])),
+<<<<<<< HEAD
     'can_remove_repairs', COALESCE(emp.can_remove_repairs, false),
     'employee_kind', COALESCE(emp.employee_kind, 'employee')
+=======
+    'can_remove_repairs', COALESCE(emp.can_remove_repairs, false)
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   );
 END;
 $$;
 
+<<<<<<< HEAD
 -- 6) Signup RPC (avoids client INSERT privilege edge cases)
 DROP FUNCTION IF EXISTS public.signup_employee(text, text);
 
 CREATE OR REPLACE FUNCTION public.signup_employee(p_username text, p_password text, p_kind text DEFAULT 'employee')
+=======
+-- 5) Signup RPC (avoids client INSERT privilege edge cases)
+CREATE OR REPLACE FUNCTION public.signup_employee(p_username text, p_password text)
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -109,18 +122,25 @@ SET search_path = public
 AS $$
 DECLARE
   emp public.employees%ROWTYPE;
+<<<<<<< HEAD
   kind text;
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 BEGIN
   IF p_username IS NULL OR length(trim(p_username)) = 0 OR p_password IS NULL OR length(p_password) = 0 THEN
     RETURN jsonb_build_object('ok', false, 'message', 'Username and password required');
   END IF;
 
+<<<<<<< HEAD
   kind := CASE WHEN lower(trim(COALESCE(p_kind, ''))) = 'sales' THEN 'sales' ELSE 'employee' END;
 
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   IF EXISTS (SELECT 1 FROM public.employees WHERE username = trim(p_username)) THEN
     RETURN jsonb_build_object('ok', false, 'message', 'Username already exists');
   END IF;
 
+<<<<<<< HEAD
   INSERT INTO public.employees (username, password, is_approved, employee_kind, allowed_cards, can_remove_repairs)
   VALUES (
     trim(p_username),
@@ -130,14 +150,22 @@ BEGIN
     CASE WHEN kind = 'sales' THEN ARRAY['attendance']::text[] ELSE ARRAY['repair-service', 'repair-list', 'attendance']::text[] END,
     false
   )
+=======
+  INSERT INTO public.employees (username, password, is_approved)
+  VALUES (trim(p_username), p_password, false)
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   RETURNING * INTO emp;
 
   RETURN jsonb_build_object(
     'ok', true,
     'id', emp.id,
     'username', emp.username,
+<<<<<<< HEAD
     'is_approved', emp.is_approved,
     'employee_kind', emp.employee_kind
+=======
+    'is_approved', emp.is_approved
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   );
 EXCEPTION
   WHEN unique_violation THEN
@@ -148,12 +176,21 @@ $$;
 REVOKE ALL ON FUNCTION public.login_employee(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.login_employee(text, text) TO anon, authenticated;
 
+<<<<<<< HEAD
 REVOKE ALL ON FUNCTION public.signup_employee(text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.signup_employee(text, text, text) TO anon, authenticated;
 
 NOTIFY pgrst, 'reload schema';
 
 -- 7) Verify
+=======
+REVOKE ALL ON FUNCTION public.signup_employee(text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.signup_employee(text, text) TO anon, authenticated;
+
+NOTIFY pgrst, 'reload schema';
+
+-- 6) Verify
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 SELECT c.relname AS table_name, c.relrowsecurity AS rls_on
 FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace

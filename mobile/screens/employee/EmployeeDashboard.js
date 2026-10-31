@@ -119,6 +119,7 @@ export default function EmployeeDashboard({ navigation }) {
       }
     >
       <SectionHeader title="Your workspace" subtitle="Choose what you want to do" style={styles.section} />
+<<<<<<< HEAD
       <ActionCardButton
         title="Orders"
         subtitle="Approve and mark delivered"
@@ -126,6 +127,8 @@ export default function EmployeeDashboard({ navigation }) {
         tone="warning"
         onPress={() => navigation.navigate('EmployeeOrders')}
       />
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
       {allowedCards.length > 0 ? (
         allowedCards.map(cardId => renderCard(cardId))
       ) : (

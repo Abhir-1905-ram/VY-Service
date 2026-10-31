@@ -11,6 +11,7 @@ import SectionHeader from '../../components/SectionHeader';
 import LoadingState from '../../components/LoadingState';
 import EmptyState from '../../components/EmptyState';
 import { colors, spacing, tones, radii } from '../../ui/Theme';
+<<<<<<< HEAD
 import ChoiceChips from '../../components/ChoiceChips';
 import { getEmployeeCards, updateEmployee } from '../../services/api';
 
@@ -18,6 +19,9 @@ const KIND_OPTIONS = [
   { value: 'employee', label: 'Employee', icon: 'construct-outline' },
   { value: 'sales', label: 'Sales', icon: 'briefcase-outline' },
 ];
+=======
+import { getEmployeeCards, updateEmployeeCards } from '../../services/api';
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
 const CARD_OPTIONS = [
   { id: 'repair-service', label: 'Repair & Service', description: 'Allow employee to add new repair requests', icon: 'construct-outline' },
@@ -29,7 +33,10 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
   const { employee } = route.params || {};
   const [allowedCards, setAllowedCards] = useState(['repair-service', 'repair-list', 'attendance']);
   const [canRemoveRepairs, setCanRemoveRepairs] = useState(false);
+<<<<<<< HEAD
   const [employeeKind, setEmployeeKind] = useState(employee?.employeeKind === 'sales' ? 'sales' : 'employee');
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -125,11 +132,15 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
       // Ensure we're sending an array, even if empty
       const cardsToSave = Array.isArray(allowedCards) ? allowedCards : [];
 
+<<<<<<< HEAD
       const res = await updateEmployee(employee._id, {
         allowedCards: cardsToSave,
         canRemoveRepairs,
         employeeKind,
       });
+=======
+      const res = await updateEmployeeCards(employee._id, cardsToSave, canRemoveRepairs);
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
       if (res.success) {
         // Get the saved cards from response
@@ -197,8 +208,12 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
         </View>
         <View style={styles.infoBlock}>
           <InfoRow icon="person-outline" label="Username" value={employee.username} />
+<<<<<<< HEAD
           <InfoRow icon="shield-checkmark-outline" label="Approved" value={employee.isApproved ? 'Yes' : 'No'} />
           <InfoRow icon="briefcase-outline" label="Login" value={employeeKind === 'sales' ? 'Sales' : 'Employee'} last />
+=======
+          <InfoRow icon="shield-checkmark-outline" label="Approved" value={employee.isApproved ? 'Yes' : 'No'} last />
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
         </View>
       </AppCard>
 
@@ -206,6 +221,7 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
         <LoadingState message="Loading permissions..." style={styles.loading} />
       ) : (
         <>
+<<<<<<< HEAD
           <SectionHeader title="Login type" subtitle="Sales and employee accounts use different logins" />
           <AppCard style={styles.card}>
             <ChoiceChips
@@ -228,6 +244,11 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
           />
           <AppCard style={styles.card}>
             {CARD_OPTIONS.filter((card) => employeeKind !== 'sales' || card.id === 'attendance').map((card, idx, list) => {
+=======
+          <SectionHeader title="Allowed action cards" subtitle="Select which action cards this employee can access" />
+          <AppCard style={styles.card}>
+            {CARD_OPTIONS.map((card, idx) => {
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
               const isEnabled = allowedCards.includes(card.id);
               const isDisabled = card.id === 'repair-list' && !allowedCards.includes('repair-service');
               return (
@@ -240,12 +261,17 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
                   value={isEnabled && !isDisabled}
                   onValueChange={() => toggleCard(card.id)}
                   disabled={isDisabled}
+<<<<<<< HEAD
                   last={idx === list.length - 1}
+=======
+                  last={idx === CARD_OPTIONS.length - 1}
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
                 />
               );
             })}
           </AppCard>
 
+<<<<<<< HEAD
           {employeeKind !== 'sales' && (
             <>
               <SectionHeader title="Repair list permissions" subtitle="Control special permissions for repair management" />
@@ -261,6 +287,19 @@ export default function EmployeeDetailsScreen({ route, navigation }) {
               </AppCard>
             </>
           )}
+=======
+          <SectionHeader title="Repair list permissions" subtitle="Control special permissions for repair management" />
+          <AppCard style={styles.card}>
+            <ToggleRow
+              icon="trash-outline"
+              label="Remove Pending Repairs"
+              description="Allow employee to remove repair items from the Pending list"
+              value={canRemoveRepairs}
+              onValueChange={setCanRemoveRepairs}
+              last
+            />
+          </AppCard>
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 
           <AppButton
             title="Save Changes"
@@ -285,7 +324,10 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 11, fontWeight: '800' },
   infoBlock: { marginTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.xs },
   card: { paddingVertical: spacing.xs },
+<<<<<<< HEAD
   kinds: { marginVertical: spacing.md, marginHorizontal: spacing.md },
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   loading: { paddingVertical: spacing.xl },
   save: { marginTop: spacing.xl, marginBottom: spacing.lg },
 });

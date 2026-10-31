@@ -9,8 +9,11 @@ import RepairAndService from '../screens/RepairAndService';
 import AdminAttendanceListScreen from '../screens/admin/AdminAttendanceListScreen';
 import AdminAttendanceEditScreen from '../screens/admin/AdminAttendanceEditScreen';
 import RepairEditScreen from '../screens/admin/RepairEditScreen';
+<<<<<<< HEAD
 import OrderListScreen from '../screens/orders/OrderListScreen';
 import OrderFormScreen from '../screens/orders/OrderFormScreen';
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 import { colors } from '../ui/Theme';
 
 const Stack = createNativeStackNavigator();
@@ -33,8 +36,11 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminRepairStatus" component={RepairStatusUpdateScreen} />
       <Stack.Screen name="AdminRepairAndService" component={RepairAndService} />
       <Stack.Screen name="AdminRepairEdit" component={RepairEditScreen} />
+<<<<<<< HEAD
       <Stack.Screen name="AdminOrders" component={OrderListScreen} initialParams={{ mode: 'admin' }} />
       <Stack.Screen name="AdminOrderForm" component={OrderFormScreen} />
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
     </Stack.Navigator>
   );
 }

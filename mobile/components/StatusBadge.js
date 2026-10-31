@@ -8,8 +8,11 @@ import { tones, radii } from '../ui/Theme';
  */
 export function statusTone(status) {
   const text = String(status || '').trim().toLowerCase();
+<<<<<<< HEAD
   if (text === 'approved' || text === 'viewed') return 'info';
   if (text === 'delivered') return 'success';
+=======
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
   if (text.includes('delivered')) return text.includes('not completed') ? 'neutral' : 'info';
   if (text === 'completed') return 'success';
   if (text === 'not completed') return 'neutral';

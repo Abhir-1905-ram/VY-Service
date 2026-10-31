@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+dist/
+*.log
+.env
+.DS_Store
+mobile/node_modules/
+mobile/.expo/
+backend/node_modules/
+backend/.wwebjs_auth/

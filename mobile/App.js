@@ -2,11 +2,17 @@ import React, { useContext, useState } from 'react';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { StyleSheet, View, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+<<<<<<< HEAD
 import { NavigationBar } from 'expo-navigation-bar';
 import AuthNavigator from './navigation/AuthNavigator';
 import AdminNavigator from './navigation/AdminNavigator';
 import EmployeeNavigator from './navigation/EmployeeNavigator';
 import SalesNavigator from './navigation/SalesNavigator';
+=======
+import AuthNavigator from './navigation/AuthNavigator';
+import AdminNavigator from './navigation/AdminNavigator';
+import EmployeeNavigator from './navigation/EmployeeNavigator';
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
 import { AuthProvider, AuthContext } from './contexts/AuthContext';
 import { colors } from './ui/Theme';
 import SplashScreen from './screens/SplashScreen';
@@ -37,6 +43,7 @@ function RootNavigator() {
   }
   return (
     <NavigationContainer theme={navTheme}>
+<<<<<<< HEAD
       {user?.role === 'admin'
         ? <AdminNavigator />
         : user?.role === 'employee' && user?.employeeKind === 'sales'
@@ -44,6 +51,9 @@ function RootNavigator() {
           : user?.role === 'employee'
             ? <EmployeeNavigator />
             : <AuthNavigator />}
+=======
+      {user?.role === 'admin' ? <AdminNavigator /> : user?.role === 'employee' ? <EmployeeNavigator /> : <AuthNavigator />}
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
     </NavigationContainer>
   );
 }
@@ -57,8 +67,12 @@ function AppContent() {
 
   return (
     <View style={styles.root}>
+<<<<<<< HEAD
       <StatusBar barStyle="light-content" />
       <NavigationBar style="light" hidden />
+=======
+      <StatusBar barStyle="light-content" backgroundColor={colors.primaryDeep} translucent={false} />
+>>>>>>> 3e5d7325c20db157f7ce370f6bca04996d1fe0fc
       <View style={styles.content}>
         <RootNavigator />
       </View>
