@@ -74,6 +74,18 @@ CREATE TABLE IF NOT EXISTS sales_orders (
 CREATE INDEX IF NOT EXISTS idx_sales_orders_created_at ON sales_orders(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sales_orders_created_by ON sales_orders(created_by);
 
+-- Phone push tokens. Sales employees are never stored here.
+CREATE TABLE IF NOT EXISTS push_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  token TEXT NOT NULL UNIQUE,
+  recipient_role TEXT NOT NULL CHECK (recipient_role IN ('admin', 'employee')),
+  employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+  username TEXT DEFAULT '',
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_tokens_role ON push_tokens(recipient_role);
+
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
@@ -109,11 +121,13 @@ ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.repairs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sales_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.push_tokens ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS employees_app_all ON public.employees;
 DROP POLICY IF EXISTS repairs_app_all ON public.repairs;
 DROP POLICY IF EXISTS attendance_app_all ON public.attendance;
 DROP POLICY IF EXISTS sales_orders_app_all ON public.sales_orders;
+DROP POLICY IF EXISTS push_tokens_app_all ON public.push_tokens;
 
 CREATE POLICY employees_app_all ON public.employees
   FOR ALL TO anon, authenticated
@@ -131,6 +145,10 @@ CREATE POLICY sales_orders_app_all ON public.sales_orders
   FOR ALL TO anon, authenticated
   USING (true) WITH CHECK (true);
 
+CREATE POLICY push_tokens_app_all ON public.push_tokens
+  FOR ALL TO anon, authenticated
+  USING (true) WITH CHECK (true);
+
 REVOKE ALL ON TABLE public.employees FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.employees TO anon, authenticated;
 REVOKE SELECT (password) ON public.employees FROM anon, authenticated;
@@ -138,6 +156,7 @@ REVOKE SELECT (password) ON public.employees FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.repairs TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.attendance TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.sales_orders TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.push_tokens TO anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.login_employee(p_username text, p_password text)
 RETURNS jsonb

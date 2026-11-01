@@ -56,8 +56,12 @@ export default function OrderListScreen({ navigation, route }) {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const todayOrders = useMemo(() => orders.filter((order) => isToday(order.createdAt)), [orders]);
-  const pastOrders = useMemo(() => orders.filter((order) => !isToday(order.createdAt)), [orders]);
+  const scopedOrders = useMemo(() => {
+    if (user?.employeeKind !== 'sales') return orders;
+    return orders.filter((order) => order.createdBy && order.createdBy === user?.id);
+  }, [orders, user]);
+  const todayOrders = useMemo(() => scopedOrders.filter((order) => isToday(order.createdAt)), [scopedOrders]);
+  const pastOrders = useMemo(() => scopedOrders.filter((order) => !isToday(order.createdAt)), [scopedOrders]);
   const filteredPastOrders = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return pastOrders;
@@ -72,11 +76,17 @@ export default function OrderListScreen({ navigation, route }) {
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
-    const res = await getOrders(mode === 'sales' ? user?.id : null);
+    if (mode === 'sales' && !user?.id) {
+      setOrders([]);
+      setLoading(false);
+      return;
+    }
+    const viewer = mode === 'sales' ? { ...user, employeeKind: 'sales' } : user;
+    const res = await getOrders(viewer);
     if (res.success) setOrders(res.data || []);
     else setError(res.message || 'Could not load orders');
     setLoading(false);
-  }, [mode, user?.id]);
+  }, [mode, user]);
 
   useFocusEffect(
     useCallback(() => {

@@ -1,4 +1,5 @@
 import React, { useContext, useState } from 'react';
+import './services/pushNotifications';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { StyleSheet, View, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

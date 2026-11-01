@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login as apiLogin, signup as apiSignup } from '../services/api';
+import { syncPushRegistration, unregisterPushToken } from '../services/pushNotifications';
 
 export const AuthContext = createContext(null);
 
@@ -21,6 +22,11 @@ export function AuthProvider({ children }) {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    syncPushRegistration(user);
+  }, [user, loading]);
 
   const signIn = async (username, password, remember) => {
     const res = await apiLogin(username, password);
@@ -52,6 +58,7 @@ export function AuthProvider({ children }) {
   };
 
   const signOut = async () => {
+    await unregisterPushToken();
     setUser(null);
     await AsyncStorage.removeItem('session');
   };

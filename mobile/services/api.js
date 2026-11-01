@@ -538,10 +538,14 @@ function mapOrder(row) {
   };
 }
 
-export const getOrders = async (createdBy) => {
+export const getOrders = async (viewer) => {
   try {
+    const salesOnly = viewer?.employeeKind === 'sales';
     let query = supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
-    if (createdBy) query = query.eq('created_by', createdBy);
+    if (salesOnly) {
+      if (!viewer?.id) return { success: true, data: [] };
+      query = query.eq('created_by', viewer.id);
+    }
     const { data, error } = await query;
     if (error) {
       if (error.message && error.message.includes('schema cache')) {
@@ -549,7 +553,7 @@ export const getOrders = async (createdBy) => {
       }
       return { success: false, message: error.message };
     }
-    const rows = data || [];
+    const rows = (data || []).filter((row) => !salesOnly || row.created_by === viewer.id);
     const missingIds = [...new Set(rows.filter((row) => !row.created_by_name && row.created_by).map((row) => row.created_by))];
     if (missingIds.length) {
       const { data: people } = await supabase.from('employees').select('id, username').in('id', missingIds);

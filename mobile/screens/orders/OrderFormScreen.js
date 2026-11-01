@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Dimensions, Keyboard, Platform, StyleSheet, Text, View } from 'react-native';
 import { AuthContext } from '../../contexts/AuthContext';
 import { saveOrder } from '../../services/api';
+import { notifyNewOrder } from '../../services/pushNotifications';
 import Screen from '../../components/Screen';
 import AppHeader from '../../components/AppHeader';
 import AppCard from '../../components/AppCard';
@@ -80,6 +81,9 @@ export default function OrderFormScreen({ navigation, route }) {
     });
     setLoading(false);
     if (res.success) {
+      if (!existing && user?.employeeKind === 'sales') {
+        await notifyNewOrder(res.data);
+      }
       navigation.goBack();
       return;
     }
