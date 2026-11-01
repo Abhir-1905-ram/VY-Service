@@ -29,6 +29,7 @@
         "backgroundColor": "#081C45"
       },
       "package": "com.vyservice.app",
+      "googleServicesFile": "./google-services.json",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "ACCESS_FINE_LOCATION",

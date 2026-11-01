@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "636757421622",
+    "project_id": "vy-service",
+    "storage_bucket": "vy-service.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:636757421622:android:5dd523f82780b764967297",
+        "android_client_info": {
+          "package_name": "Vy.service"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzAkQt8k6ZYmAW8aoEAZf5LCJEHc-HXqo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:636757421622:android:f9fbe38b5665112e967297",
+        "android_client_info": {
+          "package_name": "com.vyservice.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzAkQt8k6ZYmAW8aoEAZf5LCJEHc-HXqo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

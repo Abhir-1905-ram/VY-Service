@@ -8,3 +8,5 @@ mobile/node_modules/
 mobile/.expo/
 backend/node_modules/
 backend/.wwebjs_auth/
+mobile/*firebase-adminsdk*.json
+mobile/*service-account*.json
